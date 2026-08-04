@@ -1,0 +1,102 @@
+# CONVERSION DE DEVISES
+#
+# PROVENANCE : feuilles "Rate", "Annual average rate", "Moyenne Mensuelle",
+# "EOM" et "Taux EOM ZAR" du classeur "AA Mage SAS Consolidated accounts 2023
+# MARGIN.xlsx" + feuille "Rate" du classeur "by cost center".
+#
+# FAITS OBSERVES :
+#  - trois types de taux coexistent : EOM (fin de mois), Average (moyen), Historical
+#  - source citee dans le classeur : www.banque-france.fr
+#  - devises gerees : AED, GBP, HKD, JPY, KRW, ZAR, CNY  (cotation INDIRECTE :
+#    1 EUR = X devise ; ex. JPY 156,33 ; GBP 0,8391)
+#  - le nombre de mois de la periode est lu dans le fichier Cashflow statements
+#    (formule =MONTH(...[Cashflow statements Mage SAS 2023.xlsx]Cover'!$F$41))
+#
+# DEDUCTION (usage standard, coherent avec la presence des trois taux) :
+#  - postes de BILAN      -> taux EOM de la date de cloture
+#  - postes de RESULTAT   -> taux MOYEN de la periode
+#  - CAPITAL / primes     -> taux HISTORIQUE
+#  - l'ecart de conversion alimente "Consolidation reserves" /
+#    "Accumlated other comprehensive profit/loss"
+# STATUT : A VALIDER -> Q-6.1 a Q-6.4
+
+base_currency: EUR
+quotation: indirect          # 1 EUR = <rate> devise
+source: "Banque de France (www.banque-france.fr)"
+
+# Regle de taux par type de poste
+rate_policy:
+  BALANCE_SHEET: eom
+  PROFIT_AND_LOSS: average
+  EQUITY_HISTORICAL: historical
+
+# Postes du bilan convertis au taux historique (HYPOTHESE - Q-6.3)
+historical_lines:
+  - Share capital
+  - Additional paid in capital
+
+# Poste recevant l'ecart de conversion (HYPOTHESE - Q-6.4)
+translation_difference_line: Consolidation reserves
+
+# ---------------------------------------------------------------------------
+# Taux constates au 31 decembre 2023 (FAIT OBSERVE - feuille "Rate")
+# Sert de jeu de reference pour les tests de non-regression.
+# ---------------------------------------------------------------------------
+rates:
+  # ---------------------------------------------------------------------------
+  # A REMPLACER PAR LES TAUX REELS DE LA CLOTURE 2025.
+  # Ces valeurs sont des PLACEHOLDERS servant a faire tourner le jeu de
+  # demonstration (samples/) ; elles n'ont PAS ete lues dans un fichier Mage.
+  # ---------------------------------------------------------------------------
+  "2025-12-31":
+    eom:
+      JPY: 156.3300
+    average:
+      JPY: 156.3000
+
+  "2023-12-31":
+    eom:
+      AED: 3.6144
+      GBP: 0.8391
+      HKD: 8.6314
+      JPY: 156.3300
+      KRW: 1329.4000
+      ZAR: 20.3477
+      CNY: 7.8509
+    average:
+      AED: 3.8917
+      GBP: 0.8365
+      HKD: 8.4676
+      JPY: 151.9425
+      KRW: 1348.8450
+      ZAR: 20.0410
+      CNY: 7.6591
+
+  # FAIT OBSERVE - feuille "Rate" du classeur by cost center 31-12-2019
+  "2019-12-31":
+    eom:
+      AED: 4.1187
+      GBP: 0.8508
+      HKD: 8.7473
+      JPY: 121.9400
+      KRW: 1296.2800
+      ZAR: 15.7773
+      CNY: 7.8205
+    average:
+      AED: 4.1073
+      GBP: 0.8773
+      HKD: 8.7724
+      JPY: 122.0567
+      KRW: 1304.8983
+      ZAR: 16.1731
+      CNY: 7.7339
+
+# Taux historiques "for Capital" (FAIT OBSERVE - feuille "Rate")
+historical:
+  AED: 4.8765
+  GBP: 0.8333
+  HKD: 9.7716
+  JPY: 108.0988
+  KRW: 1425.9843
+  ZAR: 13.3104
+  CNY: 7.5939

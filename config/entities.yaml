@@ -1,0 +1,128 @@
+# PERIMETRE DE CONSOLIDATION
+#
+# PROVENANCE : entetes de colonnes des feuilles "Conso <date> legal entity" et
+# "Conso <date> CC-local cur" du classeur de reference "Mage SAS Consolidated
+# accounts ... by cost center", comptes intragroupe 267xxxxx / 411xxxxx du
+# fichier "MAPPING MAGE SAS.xlsx", et fichier "Consolidated Statement of Cash
+# Flows Mage (indirect method)".
+#
+# STATUT : la LISTE des entites est un FAIT OBSERVE.
+#          Le POURCENTAGE de detention et la METHODE de consolidation sont des
+#          HYPOTHESES A VALIDER (non lisibles dans les fichiers analyses).
+#          => cf. question Q-2.3 dans docs/06-questions-clarification.md
+
+reporting_currency: EUR
+
+entities:
+  - code: MAGE_SAS
+    name: MAGE SAS
+    currency: EUR
+    country: FR
+    role: parent
+    method: full            # HYPOTHESE
+    ownership: 1.00         # HYPOTHESE
+    mapping: mapping/mage_sas_accounts.csv
+
+  - code: SICCA
+    name: SICCA SARL
+    currency: EUR
+    country: FR
+    role: subsidiary
+    method: full            # HYPOTHESE
+    ownership: 1.00         # HYPOTHESE
+    mapping: mapping/sicca_accounts.csv
+
+  - code: MAGE_SHANGHAI
+    name: MAGE SHANGHAI
+    legal_name: Mage Shanghai Commercial Trading
+    currency: CNY
+    country: CN
+    role: subsidiary
+    method: full            # HYPOTHESE
+    ownership: 1.00         # HYPOTHESE
+
+  - code: CORTHAY_UK
+    name: CORTHAY UK
+    legal_name: Corthay UK Limited
+    currency: GBP
+    country: GB
+    role: subsidiary
+    method: full            # HYPOTHESE
+    ownership: 1.00         # HYPOTHESE
+
+  - code: VOLNEY_UK
+    name: VOLNEY UK
+    currency: GBP
+    country: GB
+    role: subsidiary
+    method: full            # HYPOTHESE
+    ownership: 1.00         # HYPOTHESE
+
+  - code: MAGE_MIDDLE_EAST
+    name: MAGE MIDDLE EAST
+    legal_name: Mage Middle East FZ
+    currency: AED
+    country: AE
+    role: subsidiary
+    method: full            # HYPOTHESE
+    ownership: 1.00         # HYPOTHESE
+
+  - code: CORTHAY_MIDDLE_EAST
+    name: CORTHAY MIDDLE EAST JV
+    currency: AED
+    country: AE
+    role: joint_venture     # HYPOTHESE deduite du suffixe "JV"
+    method: equity          # HYPOTHESE - a valider (Q-2.4)
+    ownership: null         # INCONNU
+
+  - code: MAGE_ASIA_PACIFIC
+    name: MAGE ASIA PACIFIC
+    legal_name: Mage Asia Pacific Limited
+    currency: HKD
+    country: HK
+    role: subsidiary
+    method: full            # HYPOTHESE
+    ownership: 1.00         # HYPOTHESE
+
+  - code: MAGE_JAPON_KK
+    name: MAGE JAPON KK
+    currency: JPY
+    country: JP
+    role: subsidiary
+    method: full            # HYPOTHESE
+    ownership: 1.00         # HYPOTHESE
+    mapping: mapping/mage_japon_kk_accounts.csv
+
+  - code: MAGE_KOREA
+    name: MAGE KOREA LIMITED
+    currency: KRW
+    country: KR
+    role: subsidiary
+    method: full            # HYPOTHESE
+    ownership: 1.00         # HYPOTHESE
+
+  - code: MAGE_DISTRIBUTORS_SA
+    name: MAGE DISTRIBUTORS SA
+    currency: ZAR
+    country: ZA
+    role: subsidiary
+    method: full            # HYPOTHESE
+    ownership: 1.00         # HYPOTHESE
+
+  # Entites presentes uniquement via des comptes de liaison intragroupe
+  # (267xxxxx / 411xxxxx) : presence au perimetre A CONFIRMER (Q-1.2).
+  - code: ARDILLAT
+    name: ARDILLAT LTD
+    currency: GBP           # HYPOTHESE
+    role: unknown
+    method: null
+    ownership: null
+    in_scope: false
+
+  - code: MAGE_CHINA
+    name: MAGE CHINA
+    currency: CNY           # HYPOTHESE
+    role: unknown
+    method: null
+    ownership: null
+    in_scope: false

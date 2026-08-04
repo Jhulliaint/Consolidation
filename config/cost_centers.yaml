@@ -1,0 +1,123 @@
+# AXE ANALYTIQUE : CENTRES DE COUTS
+#
+# PROVENANCE :
+#  - codes 921S* : liste "Colonne1/Colonne2" (colonnes D:E) de la feuille
+#    "Mapping" de MAPPING MAGE SAS.xlsx  -> sections analytiques Sage de MAGE SAS
+#  - libelles de colonnes : feuille "Conso <date> CC-local cur" du classeur
+#    "Mage SAS Consolidated accounts ... by cost center"
+#
+# STATUT : les codes et libelles sont des FAITS OBSERVES.
+#          Le rattachement d'un centre de couts a une entite est une DEDUCTION
+#          (issue de la position des colonnes sous chaque entite).
+
+# ---------------------------------------------------------------------------
+# Sections analytiques internes de MAGE SAS (plan Sage)
+# NB : plusieurs codes pointent vers le meme centre de couts -> cf. anomalie A-02
+# ---------------------------------------------------------------------------
+analytic_sections:
+  "921S0":  HEADQUARTERS
+  "921S1":  HEADQUARTERS
+  "921S2":  HEADQUARTERS
+  "921S3":  MANUFACTURE
+  "921S4":  HEADQUARTERS
+  "921S5":  HEADQUARTERS
+  "921S6":  VOLNEY
+  "921S9":  WHOLESALES
+  "921S11": SUB
+  "921S12": VOLNEY
+  "921S14": E COMMERCE
+  "921S15": HAUTE CORDONNERIE
+
+# ---------------------------------------------------------------------------
+# Centres de couts de restitution, par entite
+# ---------------------------------------------------------------------------
+cost_centers:
+  - code: HEADQUARTERS
+    entity: MAGE_SAS
+    label: HEADQUARTERS
+  - code: VOLNEY
+    entity: MAGE_SAS
+    label: VOLNEY
+  - code: WHOLESALES
+    entity: MAGE_SAS
+    label: WHOLESALES
+  - code: SUB
+    entity: MAGE_SAS
+    label: SUB
+  - code: MANUFACTURE
+    entity: MAGE_SAS
+    label: MANUFACTURE
+  - code: PRIVATE_SALES
+    entity: MAGE_SAS
+    label: PRIVATE SALES
+  - code: E_COMMERCE
+    entity: MAGE_SAS
+    label: E COMMERCE
+  - code: HAUTE_CORDONNERIE
+    entity: MAGE_SAS
+    label: HAUTE CORDONNERIE
+  - code: BESPOKE_FRANCE
+    entity: SICCA
+    label: BESPOKE FRANCE
+  - code: BESPOKES_SUB
+    entity: SICCA
+    label: BESPOKES SUB
+  - code: BEIJING
+    entity: MAGE_SHANGHAI
+    label: BEIJING
+  - code: WUHAN
+    entity: MAGE_SHANGHAI
+    label: WUHAN
+  - code: XIAN
+    entity: MAGE_SHANGHAI
+    label: XIAN
+  - code: MOTCOMB
+    entity: CORTHAY_UK
+    label: MOTCOMB
+  - code: DUBAI
+    entity: MAGE_MIDDLE_EAST
+    label: DUBAI
+  - code: CORTHAY_MIDDLE_EAST_JV
+    entity: CORTHAY_MIDDLE_EAST
+    label: CORTHAY MIDDLE EAST JV
+  - code: LANDMARK
+    entity: MAGE_ASIA_PACIFIC
+    label: LANDMARK
+  - code: HARBOUR_CITY
+    entity: MAGE_ASIA_PACIFIC
+    label: HARBOUR CITY
+  - code: AOYAMA
+    entity: MAGE_JAPON_KK
+    label: AOYAMA
+  - code: ISETAN
+    entity: MAGE_JAPON_KK
+    label: ISETAN
+  - code: HANKYU_TOKYO
+    entity: MAGE_JAPON_KK
+    label: HANKYU TOKYO
+  - code: HANKYU_OSAKA
+    entity: MAGE_JAPON_KK
+    label: HANKYU OSAKA
+  - code: GALLERIA_LOTTE
+    entity: MAGE_KOREA
+    label: GALLERIA/LOTTE
+  - code: LOTTE
+    entity: MAGE_KOREA
+    label: LOTTE
+  - code: JOHANNESBURG
+    entity: MAGE_DISTRIBUTORS_SA
+    label: JOHANNESBURG
+
+# Colonnes techniques du rapport par centre de couts (FAIT OBSERVE)
+technical_columns:
+  - ELIMINATION
+  - TOTAL MAGE CONSOLIDATED ACCOUNTS
+
+# Cle de repartition : AUCUNE cle de repartition (driver) n'a ete trouvee dans
+# les fichiers analyses. L'affectation analytique semble DIRECTE (chaque ecriture
+# porte sa section). HYPOTHESE A VALIDER -> Q-5.1 / Q-5.2.
+allocation:
+  method: direct
+  drivers: []
+  # Centre de couts applique lorsque la source ne porte aucune section :
+  default_cost_center: UNALLOCATED

@@ -1,0 +1,17 @@
+__pycache__/
+*.py[cod]
+.pytest_cache/
+*.egg-info/
+.venv/
+venv/
+
+# Sorties de l'application
+out/
+samples/data/
+*.db
+
+# Extractions brutes des classeurs sources : volumineuses et contenant des
+# soldes reels. Conservees hors du depot ; seules les tables de reference
+# derivees (config/mapping, config/coa) sont versionnees.
+analysis/raw/
+analysis/sheets/

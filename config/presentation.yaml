@@ -1,0 +1,87 @@
+# PARAMETRAGE DE LA PRESENTATION DES CHIFFRES
+#
+# Ce fichier ne pilote QUE l'affichage. Il n'intervient jamais dans le calcul :
+# le moteur travaille en Decimal a pleine precision et n'applique ces reglages
+# qu'au moment du rendu (cf. src/mageconso/formatting.py).
+
+# --- Echelle et arrondi -----------------------------------------------------
+scale: units                 # units | thousands | millions
+scale_suffix:
+  units: ""
+  thousands: "k"
+  millions: "M"
+decimals: 0
+rounding: ROUND_HALF_UP      # mode Decimal : ROUND_HALF_UP | ROUND_HALF_EVEN |
+                             # ROUND_DOWN | ROUND_UP | ROUND_CEILING | ROUND_FLOOR
+
+# --- Separateurs et locale --------------------------------------------------
+locale: fr_FR                # pilote les libelles de mois et l'ordre par defaut
+decimal_separator: ","
+thousands_separator: " "     # espace insecable fine recommandee : " "
+
+# --- Devise -----------------------------------------------------------------
+currency_symbol: "€"
+currency_position: suffix    # prefix | suffix | none
+currency_space: true         # espace entre nombre et symbole
+
+# --- Zeros et valeurs nulles ------------------------------------------------
+show_zeros: true             # false => les zeros sont rendus comme zero_display
+zero_display: "-"            # zero | dash | blank | tout litteral
+null_display: blank          # zero | dash | blank
+
+# --- Nombres negatifs -------------------------------------------------------
+negative_format: parentheses # minus | parentheses
+negative_colour: null        # ex. "FF0000" pour un export Excel en rouge
+
+# --- Pourcentages -----------------------------------------------------------
+percent:
+  decimals: 1
+  symbol: "%"
+  symbol_space: false
+  zero_display: blank        # le classeur de reference masque les 0 %
+
+# --- Ordre et niveau de detail ---------------------------------------------
+detail_level: summary        # summary | detail | both
+period_order: chronological   # chronological | reverse
+column_order:                # ordre des colonnes du rapport par centre de couts
+  - entities
+  - cost_centers
+  - ELIMINATION
+  - TOTAL
+show_variance: false
+variance:
+  mode: absolute_and_percent # absolute | percent | absolute_and_percent
+  label_absolute: "Ecart"
+  label_percent: "Ecart %"
+
+# --- Styles (export Excel) --------------------------------------------------
+styles:
+  header:
+    bold: true
+    fill: "DCE6F1"
+    font_size: 10
+  section:
+    bold: true
+    fill: null
+  total:
+    bold: true
+    top_border: thin
+  grand_total:
+    bold: true
+    top_border: double
+  line:
+    bold: false
+  control_ok:
+    fill: "C6EFCE"
+  control_ko:
+    fill: "FFC7CE"
+
+export:
+  sheet_name_summary: "Consolidated"
+  sheet_name_detail: "Detailed"
+  freeze_panes: true
+  autofit_columns: true
+  column_width_label: 52
+  column_width_value: 16
+  include_audit_sheet: true
+  include_controls_sheet: true

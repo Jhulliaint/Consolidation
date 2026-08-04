@@ -1,0 +1,261 @@
+# Structure de l'ETAT CONSOLIDE - COMPTE DE RESULTAT
+#
+# PROVENANCE : reconstituee a partir de "EC+/2025.xlsx", feuilles "Consolidated PL"
+# et "Detailed Consolidated PL" [very hidden]. La cascade a ete VERIFIEE
+# numeriquement sur l'exercice 2025 (cf. docs/04-regles-consolidation.md).
+#
+# STATUT : FAIT OBSERVE.
+
+statement: PROFIT_AND_LOSS
+currency: EUR
+
+detail:
+  - section: Revenue
+    sign: -1
+    lines:
+      - Shoe Sales
+      - Shoe Sales distributors
+      - Shoe Sales subsidiaries
+      - Sneaker Sales
+      - Sneaker Sales distributors
+      - Sneaker Sales subsidiaries
+      - Loafer Sales
+      - Loafer Sales distributors
+      - Loafer Sales subsidiaries
+      - Sandal Sales
+      - Sandal Sales distriubutors     # orthographe d'origine conservee
+      - Sandal Sales subsidiaries
+      - Belt Sales
+      - Belt Sales distributors
+      - Belt Sales subsidiaries
+      - SLG Sales
+      - SLG Sales distributors
+      - SLG Sales subsidiaries
+      - LG Sales
+      - LG Sales distributors
+      - LG Sales subsidiaries
+      - Other sales
+      - Other sales distributors
+      - Other sales subsidiaries
+      - Bespoke shoes
+      - Bespoke shoes distributors
+      - Bespoke shoes subsidiaries
+      - Service repair
+      - Service repair distributors
+      - Service repair subsidiaries
+      - Shipment charge
+      - Shipment charge distributors
+      - Shipment charge subsidiaries
+      - Commission received
+    total: Total revenue
+
+  - section: Cost of revenue
+    sign: -1
+    lines:
+      - Manufacturing labour costs
+      - Manufacturing overhead costs
+      - Opening stock raw material
+      - Purchases raw material
+      - Closing stock raw material
+      - Opening stock in progress
+      - Closing stock in progress
+      - Opening stock shoes Mage SAS
+      - Closing stock shoes Mage SAS
+      - Opening stock shoes subsidiaries
+      - Purchases shoes from Mage
+      - Closing stock shoes subsidiaries
+      - Opening stock sneakers
+      - Purchases sneakers
+      - Closing stock sneakers
+      - Opening stock sneakers subsidiaries
+      - Purchases sneakers from Mage
+      - Closing stock sneakers subsidiaries
+      - Opening stock loafers
+      - Purchases Shoes Loafers
+      - Closing stock loafers
+      - Opening stock loafers subsidiaries
+      - Purchases loafers from Mage
+      - Closing stock loafers subsidiaries
+      - Opening stock sandals
+      - Raw material consumed for Sandals
+      - Subcontractor for Sandals
+      - Closing stock sandals
+      - Opening stock sandals subsidiaries
+      - Purchases sandals from Mage
+      - Closing stock sandals subsidiaries
+      - Opening stock belts Mage SAS
+      - Closing stock belts Mage SAS
+      - Opening stock belts subsidiaries
+      - Purchases belts from Mage
+      - Closing stock belts subsidiaries
+      - Raw material consumed for belts
+      - Other costs belts
+      - Opening stock SLG Mage SAS
+      - Purchases SLG
+      - Raw material consumed for SLG
+      - Subcontractor for SLG
+      - Closing stock SLG Mage SAS
+      - Other costs SLG
+      - Opening stock SLG subsidiaries
+      - Purchases SLG from Mage
+      - Closing stock SLG subsidiaries
+      - Opening stock LG
+      - Purchases raw material for LG
+      - Subcontractor for LG
+      - Closing stock LG
+      - Opening stock LG subsidiaries
+      - Purchases LG from Mage
+      - Closing stock LG subsidiaries
+      - Opening other stock
+      - Other purchases
+      - Closing other stock
+      - Opening other stock subsidiaries
+      - Other purchases from Mage
+      - Closing other stock subsidiaries
+      - Other costs from Mage
+      - Other costs
+      - Other costs subsidiaries
+      - Manufacturing costs bespokes
+      - Purchases Bespokes from SICCA
+      - Opening stock raw material bespokes
+      - Purchases raw material bespokes
+      - Closing stock raw material bespokes
+      - Opening stock in progress bespokes
+      - Closing stock in progress bespokes
+      - Opening stock shoes bespokes
+      - Closing stock shoes bespokes
+      - Purchases services from Mage
+      - Goods Repair
+      - Freight & duty
+    total: Total cost of revenue
+
+  - section: Selling, Marketing & Administrative expenses
+    sign: -1
+    lines:
+      - Wages and salaries
+      - Employer's contributions
+      - Vacation expenses
+      - Commission employees
+      - Director Fees
+      - Temporay staff              # orthographe d'origine conservee
+      - Rent
+      - Rates
+      - Service charge
+      - Insurance
+      - Repairs and maintenance
+      - Water rates
+      - Light and heat
+      - Shop Display
+      - Cleaning
+      - Printing, postage and stationery
+      - Telephone and internet
+      - Expensed equipment
+      - Travelling expenses
+      - Entertainments
+      - Refresments                 # orthographe d'origine conservee
+      - Freight
+      - Accountancy
+      - Auditor's remuneration
+      - Outside service
+      - Legal and professional fee
+      - Consultancy fees
+      - Research and development
+      - Management fees
+      - Commission sales
+      - Marketing events
+      - Advertising
+      - Public relations
+      - Subscriptions
+      - Other tax
+      - Credit card charges
+      - Bank charges
+      - Bad debts
+      - Miscellaneous
+      - Depreciation
+    total: Total operating expenses
+
+  - section: Below operating result
+    sign: -1
+    lines:
+      - Interest income
+      - Interest expense
+      - Profit/(loss) on foreign currency
+      - Profit/(loss) on Sale of Assets
+      - Other income (expense) net
+      - Restructuring charges
+    total: null
+
+  - section: Tax
+    sign: -1
+    lines:
+      - Corporate income tax
+      - Non-controlling interest P/L
+    total: null
+
+# ---------------------------------------------------------------------------
+# Cascade de resultat (FAIT OBSERVE - formules du classeur de reference)
+# ---------------------------------------------------------------------------
+cascade:
+  - caption: Revenue
+    from_total: Total revenue
+  - caption: Cost of revenue
+    from_total: Total cost of revenue
+  - caption: Gross Profit/(Loss)
+    sum_of: [Revenue, Cost of revenue]
+  - caption: Selling, Marketing & Administrative expenses
+    from_total: Total operating expenses
+  - caption: Profit/(Loss) from operations
+    sum_of: ["Gross Profit/(Loss)", "Selling, Marketing & Administrative expenses"]
+  - caption: Interest income
+    from_line: Interest income
+  - caption: Interest expense
+    from_line: Interest expense
+  - caption: Profit/(loss) on foreign currency
+    from_line: Profit/(loss) on foreign currency
+  - caption: Profit/(loss) on Sale of Assets
+    from_line: Profit/(loss) on Sale of Assets
+  - caption: Other income (expense) net
+    from_line: Other income (expense) net
+  - caption: Restructuring charges
+    from_line: Restructuring charges
+  - caption: Profit/(Loss) before income tax
+    sum_of:
+      - Profit/(Loss) from operations
+      - Interest income
+      - Interest expense
+      - Profit/(loss) on foreign currency
+      - Profit/(loss) on Sale of Assets
+      - Other income (expense) net
+      - Restructuring charges
+  - caption: Corporate income tax
+    from_line: Corporate income tax
+  - caption: Total Net/(loss) Profit
+    sum_of: [Profit/(Loss) before income tax, Corporate income tax]
+  - caption: Non-controlling interest P/L
+    from_line: Non-controlling interest P/L
+  - caption: Total Group Net/(loss) Profit
+    sum_of: [Total Net/(loss) Profit, Non-controlling interest P/L]
+
+# EBITA tel que defini dans le classeur de reference.
+# ATTENTION : cette definition inclut le resultat de change et les elements
+# non recurrents ; ce n'est donc pas un EBITA au sens usuel (cf. anomalie A-07).
+# Verifie sur 2025 : 33 199 + 32 264 - 437 450 + 0 - 188 713 + 0 = -560 700.
+ebita:
+  base: Profit/(Loss) from operations
+  add_back: [Depreciation]
+  plus:
+    - Profit/(loss) on foreign currency
+    - Profit/(loss) on Sale of Assets
+    - Other income (expense) net
+    - Restructuring charges
+
+# Analyse de marge par famille de produits (FAIT OBSERVE : bloc F:M du
+# classeur de reference). Chaque famille = revenus / cout des ventes / taux.
+margin_families:
+  SHOES:      {revenue: [Shoe Sales, Shoe Sales distributors]}
+  SNEAKERS:   {revenue: [Sneaker Sales, Sneaker Sales distributors]}
+  LOAFERS:    {revenue: [Loafer Sales, Loafer Sales distributors]}
+  BELT:       {revenue: [Belt Sales, Belt Sales distributors]}
+  SLG:        {revenue: [SLG Sales, SLG Sales distributors]}
+  LG:         {revenue: [LG Sales, LG Sales distributors]}
+  BESPOKE:    {revenue: [Bespoke shoes]}

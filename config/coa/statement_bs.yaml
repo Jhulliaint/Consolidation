@@ -1,0 +1,235 @@
+# Structure de l'ETAT CONSOLIDE - BILAN
+#
+# PROVENANCE : reconstituee a partir de "EC+/2025.xlsx" (SharePoint office@corthay.com),
+# feuilles "Consolidated BS" et "Detailed Consolidated BS" [very hidden].
+# Les regles d'agregation "summary" proviennent des FORMULES observees dans le classeur
+# (ex. Consolidated BS!C10 = SUM('Detailed Consolidated BS'!C10:C12)).
+#
+# STATUT : FAIT OBSERVE, sauf mention contraire.
+
+statement: BALANCE_SHEET
+currency: EUR
+
+# ---------------------------------------------------------------------------
+# Niveau DETAIL : une ligne par compte du plan de comptes groupe (Group COA).
+# L'ordre est celui du classeur de reference.
+# ---------------------------------------------------------------------------
+detail:
+  - section: Current assets
+    sign: 1
+    lines:
+      - Cash Bank
+      - Cash in Hand - petty cash
+      - Cash in Hand - cash sales
+      - Short term Investments
+      - Account Receivable
+      - Provision for Doubtful Account
+      - Stock raw material
+      - Stock work in progress
+      - Stock shoes
+      - Stock sneakers
+      - Stock loafers
+      - Stock sandals
+      - Stock belts
+      - Stock SLG
+      - Stock LG
+      - Stock other items
+      - Stock shoes subsidiaries
+      - Stock sneakers subsidiaries
+      - Stock loafers subsidiaries
+      - Stock sandals subsidiaries
+      - Stock belts subsidiaries
+      - Stock SLG subsidiaries
+      - Stock LG subsidiaries
+      - Stock other items subsidiaries
+      - Accum. Depreciation - Stocks
+      - VAT receivables
+      - Other Receivables
+      - Deposit
+      - Prepaid expenses
+      - Employee advances
+      - Other current assets
+    total: Total currents assets
+
+  - section: Non current assets
+    sign: 1
+    lines:
+      - Securities in equity method
+      - Leasehold improvements
+      - Transportation equipment
+      - Fixtures, fittings & equipment
+      - Office & computer equipment
+      - Industrial equipment
+      - Accum. Depreciation - Patent
+      - Accum. Depreciation - L.H.
+      - Accum. Depreciation - Transportation equipment
+      - Accum. Depreciation - F.F.E.
+      - Accum. Depreciation -office et computer  equipment
+      - Accum. Depreciation - Industrial equipment
+      - Industrial intellectual property
+      - Patent
+      - Goodwill
+      - Other non current assets
+    total: Total non currents assets
+
+  - section: Current liabilities
+    sign: -1
+    lines:
+      - Accounts Payable
+      - Expense reports Payable
+      - Other Payable
+      - Accrued expenses
+      - Accrued vacation
+      - Accrued loan interest
+      - Accrued commissions
+      - Accrued fringe benefits
+      - Deposit received
+      - VAT payable
+      - Net wage
+      - PAYE Liabilities
+      - shareholder C/A
+      - Dividend paid
+      - Other taxes payable
+      - Income Taxes Payable
+    total: Total current liabilities
+
+  - section: Non-current liabilities
+    sign: -1
+    lines:
+      - Long term Bank loans
+      - Current Portion Long-Term Debt
+      - Long Term Debt-Noncurrent
+    total: Total non-current liabilities
+
+  - section: Shareholders' equity
+    sign: -1
+    lines:
+      - Share capital
+      - Statutory reserve
+      - Consolidation reserves
+      - Additional paid in capital
+      - Retained earnings/losses
+      - Accumlated other comprehensive profit/loss
+      - Profit/loss net income
+      - Non-controlling interest B/S
+    total: Total shareholders' equity
+
+subtotals:
+  Total assets: [Total currents assets, Total non currents assets]
+  Total liabilities & shareholders' equity:
+    [Total current liabilities, Total non-current liabilities, Total shareholders' equity]
+
+# ---------------------------------------------------------------------------
+# Niveau SYNTHESE : regroupement des lignes de detail.
+# Chaque poste liste les lignes de detail qui l'alimentent (somme algebrique).
+# ---------------------------------------------------------------------------
+summary:
+  - section: Current assets
+    sign: 1
+    lines:
+      - caption: Cash and cash equivalents
+        from: [Cash Bank, Cash in Hand - petty cash, Cash in Hand - cash sales]
+      - caption: Short-term investments
+        from: [Short term Investments]
+      - caption: Accounts receivable, less reserves doubtful accounts
+        from: [Account Receivable, Provision for Doubtful Account]
+      - caption: Inventories net
+        from:
+          - Stock raw material
+          - Stock work in progress
+          - Stock shoes
+          - Stock sneakers
+          - Stock loafers
+          - Stock sandals
+          - Stock belts
+          - Stock SLG
+          - Stock LG
+          - Stock other items
+          - Stock shoes subsidiaries
+          - Stock sneakers subsidiaries
+          - Stock loafers subsidiaries
+          - Stock sandals subsidiaries
+          - Stock belts subsidiaries
+          - Stock SLG subsidiaries
+          - Stock LG subsidiaries
+          - Stock other items subsidiaries
+          - Accum. Depreciation - Stocks
+      - caption: Other current assets
+        from:
+          [VAT receivables, Other Receivables, Deposit, Prepaid expenses,
+           Employee advances, Other current assets]
+    total: Total currents assets
+
+  - section: Non current assets
+    sign: 1
+    lines:
+      - caption: Long-term investments
+        from: [Securities in equity method]
+      - caption: Property, plant and equipment, net
+        from:
+          - Leasehold improvements
+          - Transportation equipment
+          - Fixtures, fittings & equipment
+          - Office & computer equipment
+          - Industrial equipment
+          - Accum. Depreciation - L.H.
+          - Accum. Depreciation - Transportation equipment
+          - Accum. Depreciation - F.F.E.
+          - Accum. Depreciation -office et computer  equipment
+          - Accum. Depreciation - Industrial equipment
+      - caption: Intangible assets, net
+        from: [Industrial intellectual property, Patent, Accum. Depreciation - Patent]
+      - caption: Goodwill
+        from: [Goodwill]
+      - caption: Other non-current assets
+        from: [Other non current assets]
+    total: Total non currents assets
+
+  - section: Current liabilities
+    sign: -1
+    lines:
+      - caption: Accounts Payable
+        from: [Accounts Payable, Expense reports Payable, Other Payable]
+      - caption: Accrued expenses
+        from:
+          [Accrued expenses, Accrued vacation, Accrued loan interest,
+           Accrued commissions, Accrued fringe benefits]
+      - caption: Deposit received
+        from: [Deposit received]
+      - caption: Accrued liabilities
+        from: [VAT payable, Net wage, PAYE Liabilities, Other taxes payable]
+      - caption: shareholder C/A
+        from: [shareholder C/A, Dividend paid]
+      - caption: Current income tax liability
+        from: [Income Taxes Payable]
+    total: Total current liabilities
+
+  - section: Non-current liabilities
+    sign: -1
+    lines:
+      - caption: Long term Bank loans
+        from: [Long term Bank loans]
+      - caption: Long Term Debt-Noncurrent
+        from: [Current Portion Long-Term Debt, Long Term Debt-Noncurrent]
+    total: Total non-current liabilities
+
+  - section: Shareholders' equity
+    sign: -1
+    lines:
+      - caption: Share capital
+        from: [Share capital]
+      - caption: Statutory reserve
+        from: [Statutory reserve]
+      - caption: Consolidation reserves
+        from: [Consolidation reserves]
+      - caption: Additional paid in capital
+        from: [Additional paid in capital]
+      # NB (FAIT OBSERVE) : au niveau synthese, le resultat de l'exercice est
+      # absorbe dans "Retained earnings/losses" (formule C52 = C100 + C102).
+      - caption: Retained earnings/losses
+        from: [Retained earnings/losses, Profit/loss net income]
+      - caption: Accumlated other comprehensive profit/loss
+        from: [Accumlated other comprehensive profit/loss]
+      - caption: Non-controlling interest B/S
+        from: [Non-controlling interest B/S]
+    total: Total shareholders' equity

@@ -1,0 +1,132 @@
+# ELIMINATIONS INTRAGROUPE
+#
+# PROVENANCE :
+#  - colonne "ELIMINATION" des feuilles "Conso <date> legal entity",
+#    "Conso <date> cost center" et "Gross Margin EURO" (FAIT OBSERVE :
+#    la colonne existe et precede "TOTAL MAGE CONSOLIDATED ACCOUNTS")
+#  - comptes de liaison 267xxxxx et 411xxxxx de MAPPING MAGE SAS.xlsx
+#  - captions "... subsidiaries", "... from Mage", "... fellow company"
+#    du Group COA
+#
+# STATUT : les COUPLES de comptes a eliminer sont une DEDUCTION solide
+#          (symetrie des libelles). Le MONTANT et la METHODE exacte
+#          (elimination a 100 %, traitement de la marge en stock, ecarts de
+#          reciprocite) ne sont PAS lisibles -> A VALIDER : Q-7.1 a Q-7.5.
+
+enabled: true
+
+# Le total consolide doit etre : somme des entites + eliminations
+# (la colonne ELIMINATION porte des montants signes, FAIT OBSERVE).
+control_balance: true          # toute ecriture d'elimination doit sommer a 0
+tolerance: 1.00               # EUR - tolerance de reciprocite (HYPOTHESE Q-7.3)
+
+# ---------------------------------------------------------------------------
+# 1. Comptes reciproques de BILAN
+# ---------------------------------------------------------------------------
+reciprocal_pairs:
+  - name: Comptes courants intragroupe
+    receivable_lines:
+      - SICCA current intercompany account
+      - Mage Japan intercompany account
+      - Corthay UK intercompany account
+      - Mage Asia Pacific intercompany account
+      - Mage Middle East intercompany account
+      - Mage Korea intercompany account
+      - Mage South Africa intercompany account
+      - Mage China intercompany account
+      - Volney  UK intercompany account
+      - Ardillat LTD intercompany account
+    payable_lines:
+      - MAGE current intercompany account
+      - Mage current intercompany account
+
+  - name: Creances / dettes commerciales intragroupe
+    receivable_lines:
+      - Account Receivable - subsidiary  Mage Middle East
+      - Account Receivable - subsidiary  Corthay UK
+      - Account Receivable - subsidiary Mage Asia Pacfic
+      - Account Receivable - subsidiary Mage Japan
+      - Account Receivable - subsidiary  Mage Korea
+      - Account Receivable - subsidiary South Africa
+      - Account Receivable - subsidiary Mage China
+      - Account Receivable - subsidiary  Volney  UK
+      - Account Receivable - subsidiary Ardillat Ltd
+      - Account Receivable - Mage
+      - Account Receivable - fellow company Mage Asia Pacfic
+      - Account Receivable - fellow company  Mage Japan
+      - Account Receivable - fellow company Corthay UK
+      - Account Receivable - fellow company  Mage Korea
+      - Account Receivable - fellow company  Mage Middle East
+      - Account Receivable - fellow company  SICCA
+    payable_lines:
+      - Accounts Payable - Intercompany purchase Mage
+      - Accounts Payable - Mage Asia Pacific purchase fellow company
+      - Accounts Payable - Mage Japan  purchase fellow company
+      - Accounts Payable - Corthay UK purchase fellow company
+      - Accounts Payable - Mage Korea purchase fellow company
+      - Accounts Payable - Mage Middle East purchase fellow company
+      - Accounts Payable - SICCA purchase fellow company
+
+# ---------------------------------------------------------------------------
+# 2. Flux de RESULTAT intragroupe (ventes intragroupe <-> achats intragroupe)
+# ---------------------------------------------------------------------------
+revenue_expense_pairs:
+  - name: Ventes chaussures intragroupe
+    revenue_lines: [Shoe Sales subsidiaries]
+    expense_lines: [Purchases shoes from Mage]
+  - name: Ventes sneakers intragroupe
+    revenue_lines: [Sneaker Sales subsidiaries]
+    expense_lines: [Purchases sneakers from Mage]
+  - name: Ventes loafers intragroupe
+    revenue_lines: [Loafer Sales subsidiaries]
+    expense_lines: [Purchases loafers from Mage]
+  - name: Ventes sandales intragroupe
+    revenue_lines: [Sandal Sales subsidiaries]
+    expense_lines: [Purchases sandals from Mage]
+  - name: Ventes ceintures intragroupe
+    revenue_lines: [Belt Sales subsidiaries]
+    expense_lines: [Purchases belts from Mage]
+  - name: Ventes SLG intragroupe
+    revenue_lines: [SLG Sales subsidiaries]
+    expense_lines: [Purchases SLG from Mage]
+  - name: Ventes LG intragroupe
+    revenue_lines: [LG Sales subsidiaries]
+    expense_lines: [Purchases LG from Mage]
+  - name: Autres ventes intragroupe
+    revenue_lines: [Other sales subsidiaries]
+    expense_lines: [Other purchases from Mage]
+  - name: Prestations de services intragroupe
+    revenue_lines: [Service repair subsidiaries]
+    expense_lines: [Purchases services from Mage]
+  - name: Refacturation de port intragroupe
+    revenue_lines: [Shipment charge subsidiaries]
+    expense_lines: []          # contrepartie non identifiee -> Q-7.2
+  - name: Achats bespoke a SICCA
+    revenue_lines: [Bespoke shoes subsidiaries]
+    expense_lines: [Purchases Bespokes from SICCA]
+  - name: Autres couts intragroupe
+    revenue_lines: []
+    expense_lines: [Other costs from Mage]
+  - name: Management fees intragroupe
+    revenue_lines: [Management fees]
+    expense_lines: []          # contrepartie non identifiee -> Q-7.2
+
+# ---------------------------------------------------------------------------
+# 3. Marge en stock chez les filiales
+#    Les captions "Stock ... subsidiaries" isolent les stocks acquis aupres de
+#    MAGE SAS. Le retraitement de la marge interne n'a PAS pu etre observe.
+#    => desactive par defaut, taux a fournir par le client (Q-7.4).
+# ---------------------------------------------------------------------------
+unrealised_margin_on_stock:
+  enabled: false
+  stock_lines:
+    - Stock shoes subsidiaries
+    - Stock sneakers subsidiaries
+    - Stock loafers subsidiaries
+    - Stock sandals subsidiaries
+    - Stock belts subsidiaries
+    - Stock SLG subsidiaries
+    - Stock LG subsidiaries
+    - Stock other items subsidiaries
+  margin_rate: null
+  counterpart_line: Retained earnings/losses

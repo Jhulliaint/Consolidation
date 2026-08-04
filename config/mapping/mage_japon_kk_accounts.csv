@@ -1,0 +1,88 @@
+local_account,group_coa
+店舗現金/Cash in Store,Cash in Hand - cash sales
+普通預金/Ordinary deposit,Cash Bank
+外貨預金/Deposit in foreign currency,Cash Bank
+売掛金/Trade account receivable,Account Receivable
+関係会社売掛金/Trande account receivable from Group company,Account Receivable - Mage
+貸倒引当金(売)/Bad debt allowance,Provision for Doubtful Account
+商品/Inventory,Stock shoes subsisdairies
+前渡金/Advance payment,Prepaid expenses
+前払費用/Prepaid expenses,Prepaid expenses
+未収入金/Other account receivable,Other Receivables
+仮払金/Suspense payment,Other Receivables
+未収消費税/Consumption tax receivable,VAT receivables
+工具器具備品/Equipment,"Fixtures, fittings & equipment"
+減価償却累計額/Accumulated Depreciation,Accum. Depreciation - F.F.E.
+差入保証金/Guarantee deposit,Deposit
+その他固定資産/Other non-current assets,Other non current asstes
+創立費/Formation Expenses,Other current assets
+その他繰延資産/Other deferred assets,Other non current asstes
+買掛金/Trade account payable,Accounts Payable
+関係会社債務/Payable to group company,Accounts Payable - Intercompany purchase Mage
+未払金/Other account payable,Other Payable
+未払費用/Accrued expenses,Accrued expenses
+未払法人税等/Corporate tax payable,Income Taxes Payable
+未払消費税/Consumption tax payable,VAT payable
+前受金/Advance received,Deposit received
+預り金/Deposit received,Deposit received
+資本金/Paid in Capital,Share capital
+資本準備金/Calital reserve,Additional paid in capital
+繰越利益剰余金合計/Retained earnings,Retained earnings/losses
+通常売上(靴）Sales（Shoes),Shoe Sales
+その他売上(靴以外）Other sales（Other than shoes),Other sales
+関係会社売上高Sales to other group companies,N/A
+受取手数料Commission,Commission employees
+期首商品棚卸高Beginning Inventory,Opening stock shoes subsidiaries
+当期商品仕入高（Mage仕入）Purchase(from Mage),Purchases shoes from Mage
+当期商品仕入高（Mage以外仕入）Purchase(External),Other costs
+その他仕入(修理費用等）Other purchase（Repair cost),Goods Repair
+輸入関税Import duty,Freight & duty
+保管料Warehaouse fee,Freight & duty
+通関料Custom clearance charges,Freight & duty
+その他仕入原価諸掛Other purchase charges,Freight & duty
+期末商品棚卸高Ending inventory,Closing stock shoes subsidiaries
+他勘定振替高Transfer to other accounts,Advertising
+在庫廃既損Disposal of inventory,N/A
+販売手数料Sales Commission,Commission sales
+役員報酬Salary for director,Wages and salaries
+役員賞与Bonus for director,Wages and salaries
+給料手当Salary for staff,Wages and salaries
+賞与Bonus for staff,Wages and salaries
+通勤費Communication Allowance,Wages and salaries
+法定福利費Statutory social expenses,Employer's contributions
+福利厚生費Welfare,Employer's contributions
+研修費Staff training,Outside service
+人材派遣料(IDA)Temporary staff(IDA),Temporay staff
+荷造運賃Delivery Expenses,Freight
+広告宣伝費Advertising,Advertising
+交際費Entertainment,Travelling expenses
+会議費Meeting,Travelling expenses
+旅費交通費Travel and Transportation,Travelling expenses
+通信費Communication,Telephone and internet
+消耗品費Office supply,"Printing, postage and stationery"
+事務用品費Stationery,"Printing, postage and stationery"
+水道光熱費Utilities,Light and heat
+維持修繕費Maintenance & Repair,Repairs and maintenance
+図書新聞費Book and subscription,Subscriptions
+諸会費Members fee,Subscriptions
+支払手数料Other charges including credit charge,Credit card charges
+銀行手数料Bank charges,Bank charges
+地代家賃Office rent,Rent
+賃借料Other rent,Rent
+保険料Insurance,Insurance
+租税公課Tax and duties,Other tax
+支払報酬Legal and Accounting,Accountancy
+減価償却費Depreciation,Depreciation
+貸倒引当金繰入額Valuation allowance,N/A
+貸倒損失Bad debt loss,Bad debts
+雑費Miscellaneous,Miscellaneous
+受取利息Interest income,Interest income
+為替差益Foreign exchange gain,Profit/(loss) on foreign currency
+雑収入Other,Miscellaneous
+支払利息Interest expenses,Interest expense
+繰延資産償却Amortization of deferred assets,N/A
+為替差損Foreign exchange loss,Profit/(loss) on foreign currency
+雑損失Other,Other income (expense) net
+特別利益：Extraordinary gain:,Other income (expense) net
+在庫廃棄損Disposal of inventory,N/A
+法人税等taxes,Corporate income tax

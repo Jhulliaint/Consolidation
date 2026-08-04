@@ -1,0 +1,113 @@
+# FORMAT DES FICHIERS SOURCES "MANAGEMENT ACCOUNTS"
+#
+# PROVENANCE : classeurs "MA - Mage Japon KK", "202511 Mage Japon KK monthly
+# report DNT.xlsx", "Mage Shanghai Commercial Trading-Management accounts
+# template".
+#
+# STATUT : FAIT OBSERVE. La detection est faite par EN-TETE (jamais par
+# position fixe) afin d'absorber les variantes de colonnage entre entites.
+
+# ---------------------------------------------------------------------------
+# Feuille "Cover" : parametres de la remontee
+# ---------------------------------------------------------------------------
+cover:
+  sheet_names: [Cover, COVER, Couverture]
+  entity_name_cell: A1              # ex. "MAGE JAPON KK"
+  labels:
+    fiscal_year: ["FISCAL YEAR"]
+    local_currency: ["LOCAL CURRENCY"]
+    period_start: ["REPORTING PERIOD START DATE"]
+    period_end: ["REPORTING PERIOD END DATE"]
+  # La valeur est cherchee a droite du libelle, sur la meme ligne.
+  value_search_offset_max: 4
+
+# ---------------------------------------------------------------------------
+# Feuille "Mapping accounts" : compte local -> compte groupe
+# ---------------------------------------------------------------------------
+mapping_sheet:
+  sheet_names: ["Mapping accounts", "Mapping", "MAPPING"]
+  headers:
+    account_id: ["ACCOUNT ID", "N° Compte", "Numero de compte", "Numéro de compte"]
+    local_account: ["LOCAL ACCOUNT", "Intitule des comptes", "Intitulé des comptes"]
+    group_coa: ["GROUP MAGE COA", "MAGE COA", "Account description", "GROUP COA"]
+
+# ---------------------------------------------------------------------------
+# Feuille "Group COA" : plan de comptes groupe + marqueurs de section
+# ---------------------------------------------------------------------------
+group_coa_sheet:
+  sheet_names: ["Group COA", "GROUP COA"]
+  headers:
+    caption: ["Account description", "Account Description"]
+  section_markers:
+    BALANCE SHEET: ["BALANCE SHEET ACCOUNTS", "BALANCE SHEET"]
+    PROFIT AND LOSS: ["PROFIT & LOSS ACCOUNTS", "PROFIT AND LOSS"]
+
+# ---------------------------------------------------------------------------
+# Feuille "Trial balance" : balance a la date de cloture
+# ---------------------------------------------------------------------------
+trial_balance_sheet:
+  sheet_names: ["Trial balance", "TRIAL BALANCE", "Balance"]
+  headers:
+    caption: ["Account description"]
+    debit: ["Debit", "Débit"]
+    credit: ["Credit", "Crédit"]
+    ending_balance: ["Ending balance", "Solde"]
+  # FAIT OBSERVE : convention de signe de la source
+  sign_convention: "DEBIT_PLUS_CREDIT_MINUS"
+  # FAIT OBSERVE : lignes de controle en pied de feuille
+  controls:
+    totals_row_label: null            # ligne sans libelle portant les totaux
+    pl_label: ["PL"]
+    control_label: ["Control :", "Control:"]
+
+# ---------------------------------------------------------------------------
+# Feuille "Balance sheet" : colonnes mensuelles
+# ---------------------------------------------------------------------------
+monthly_sheet:
+  sheet_names: ["Balance sheet", "BALANCE SHEET", "P&L", "Profit and loss"]
+  # FAIT OBSERVE : 3 lignes d'entete superposees
+  header_rows:
+    month: 6      # "Dec", "Jan", ...
+    year: 7       # 2024, 2025, ...
+    currency: 8   # "JPY"
+  label_column: B
+  first_value_column: D
+  # La 1re colonne de valeurs est le comparatif d'ouverture (N-1 decembre).
+  opening_column_is_prior_year: true
+  section_labels:
+    - ASSETS
+    - Current assets
+    - Non current assets
+    - LIABILITIES AND SHAREHOLDERS' EQUITY
+    - Current liabilities
+    - Non-current liabilities
+    - Shareholders' equity
+  total_labels:
+    - Total currents assets
+    - Total current assets
+    - Total non currents assets
+    - Total non-current assets
+    - Total assets
+    - Total current liabilities
+    - Total non-current liabilities
+    - Total shareholders' equity
+    - Total liabilities & shareholders' equity
+
+# ---------------------------------------------------------------------------
+# CONVENTION DE SIGNE INTERNE DU MOTEUR
+#
+# FAIT OBSERVE - il y a DEUX conventions dans les fichiers Mage :
+#  1. les feuilles de TRAVAIL de consolidation ("Feuil1", "Conso <date> ...")
+#     portent l'entete "DEBIT (-)/CREDIT (+)" ;
+#  2. les ETATS FINAUX ("Consolidated BS", "Detailed Consolidated BS") presentent
+#     l'ACTIF en debit positif (Cash Bank 55 459) ET le PASSIF en credit positif
+#     (Accounts Payable 545 487), avec "Total assets" = "Total liabilities &
+#     shareholders' equity" = 2 587 674 ; le compte de resultat presente les
+#     produits en positif et les charges en negatif.
+#
+# Il n'existe donc PAS de convention globale unique en sortie : le signe depend
+# de la SECTION presentee. Le moteur conserve la convention de la balance source
+# (DEBIT +, CREDIT -) et le signe de presentation est applique section par
+# section via la cle "sign" de config/coa/statement_*.yaml.
+# ---------------------------------------------------------------------------
+output_sign_convention: "DEBIT_PLUS_CREDIT_MINUS"
