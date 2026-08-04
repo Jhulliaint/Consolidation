@@ -176,6 +176,14 @@ def build_statement(
             rows.append(ReportRow(caption="EBITA", kind="cascade", values=vals))
             totals["EBITA"] = vals.get("TOTAL", ZERO)
 
+    # Le compte de resultat de synthese du classeur de reference ne comporte
+    # QUE la cascade (42 lignes), pas les postes de detail. Lorsqu'un etat n'a
+    # pas de bloc "summary" propre mais possede une cascade, le niveau synthese
+    # ne restitue donc que celle-ci ; les lignes de detail ont servi a calculer
+    # les totaux mais ne sont pas presentees.
+    if level == "summary" and not struct.summary_sections and struct.cascade:
+        rows = [r for r in rows if r.kind == "cascade"]
+
     title = (
         "UNAUDITED CONSOLIDATED BALANCE SHEET"
         if statement is Statement.BALANCE_SHEET
