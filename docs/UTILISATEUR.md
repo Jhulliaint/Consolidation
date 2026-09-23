@@ -1,208 +1,280 @@
 # Documentation utilisateur
 
-## 1. Les trois commandes
+Deux façons d'utiliser l'application, qui produisent exactement les mêmes
+chiffres :
+
+- **l'interface graphique** (`mageconso ui`) — recommandée au quotidien ;
+- **la ligne de commande** — pour l'automatisation et les tâches planifiées.
+
+---
+
+## 1. L'interface graphique
 
 ```bash
-mageconso inspect      <fichiers>     # examiner un fichier source sans rien produire
-mageconso consolidate  <fichiers>     # produire les états consolidés
-mageconso trace        --account ...  # retrouver l'origine d'un montant
+mageconso ui
 ```
 
-## 2. Examiner un fichier avant de consolider
+Le navigateur s'ouvre sur `http://127.0.0.1:8765`. L'application tourne sur ce
+poste : les fichiers ne sont envoyés nulle part, et elle fonctionne hors ligne.
+`Ctrl+C` dans la fenêtre de commande pour l'arrêter.
 
-Réflexe à avoir avant toute clôture : vérifier que l'application lit
-correctement chaque fichier.
+### Étape 1 — Fichiers
 
-```bash
-mageconso inspect "G:/CORTHAY/CLOTURE MENSUELLES/2025/MA - Mage Japon KK 2025.xlsx"
-```
+Déposez les *management accounts* de la clôture (glisser-déposer ou clic).
+Pour chaque fichier, l'application affiche aussitôt :
 
-```
-=== MA - Mage Japon KK 2025.xlsx ===
-  entite lue      : 'MAGE JAPON KK'
-  devise          : JPY
-  exercice        : 2025
-  periode         : 2025-01-01 -> 2025-12-31
-  feuilles        : Cover, Mapping accounts, Group COA, Balance sheet, Trial balance
-  feuilles masquees: (aucune)
-  mapping interne : 88 correspondances
-  plan groupe     : 157 comptes
-  lignes de balance: 157
-  somme algebrique: 0
-```
-
-Points à contrôler :
-
-| Ligne | Ce qu'elle doit montrer |
+| Colonne | À vérifier |
 |---|---|
-| `entite lue` | le nom attendu — sinon l'entité ne sera pas reconnue |
-| `devise` | la devise locale, non vide |
-| `somme algebrique` | **0** — une balance déséquilibrée signale un problème de source |
-| `feuilles masquees` | les feuilles `hidden` / `very hidden` sont listées, pas ignorées |
+| **Entité** | reconnue d'après la feuille *Cover*. Si elle ne l'est pas, la liste est en rouge : choisissez l'entité. |
+| **Devise**, **Période** | cohérentes avec la clôture |
+| **Balance** | ✓ *équilibrée* — sinon le fichier source est en cause |
 
-## 3. Produire les états consolidés
+Une même entité déposée deux fois est signalée : un seul fichier serait retenu.
+
+**Classeur de référence (facultatif).** Déposez un classeur consolidé déjà
+produit (format EC+) pour comparer les états ligne à ligne. Indispensable lors
+de la première utilisation sur une clôture réelle — voir §5.
+
+### Étape 2 — Taux et options
+
+**Taux.** Une ligne par devise à convertir, en cotation indirecte comme dans les
+classeurs Mage : **1 EUR = X devise**.
+
+| Aspect de la case | Signification |
+|---|---|
+| normale | taux déjà connu pour cette clôture |
+| **surlignée** | pré-remplie avec le **dernier taux connu** : à remplacer par le taux de la clôture |
+| **rouge** | taux manquant ou manifestement faux |
+
+Le bouton **Consolider** reste inactif tant qu'un taux manque ou semble inversé
+(0,0064 au lieu de 156,33 pour le yen). Un écart de plus de 30 % avec le dernier
+taux connu est signalé sans bloquer (décimale déplacée ?).
+
+*Modèle de taux (Excel)* télécharge un fichier pré-rempli, utile pour préparer
+les taux à l'avance ou les faire valider.
+
+**États à produire.** Colonnes par entité (conseillé), états par centre de
+coûts, analyse de marge par famille.
+
+**Présentation.** Unité, décimales, négatifs, zéros, position du symbole €,
+% du chiffre d'affaires. L'aperçu se met à jour en direct.
+La présentation ne modifie jamais les montants : le classeur Excel contient les
+valeurs exactes.
+
+### Étape 3 — Résultats
+
+**Le bandeau de statut** dit d'abord si les états sont diffusables :
+
+| Bandeau | Signification |
+|---|---|
+| vert — *Tous les contrôles sont satisfaits* | diffusable |
+| orange — *points à examiner* | contrôles bloquants satisfaits, avertissements à lire |
+| rouge — *Ne pas diffuser* | au moins un contrôle bloquant en échec ; l'onglet *Contrôles* s'ouvre automatiquement |
+
+**Les onglets**
+
+| Onglet | Contenu |
+|---|---|
+| Bilan / Compte de résultat | synthèse ou détail ; *Masquer les lignes à zéro* allège le détail |
+| Par entité | une colonne par entité, éliminations, total |
+| Par centre de coûts | si demandé à l'étape 2 |
+| Marges | marge brute par famille de produits |
+| Contrôles | les 10 contrôles, avec leur détail |
+| Diagnostics | erreurs et avertissements, filtrables |
+| Mapping à compléter | comptes exclus faute de correspondance, avec suggestions |
+| Rapprochement | si un classeur de référence a été fourni |
+| Sources et taux | fichiers consolidés et taux effectivement appliqués |
+
+**Justifier un montant.** Cliquez sur n'importe quel montant d'un état : un
+panneau liste les lignes sources qui le composent — fichier, onglet, numéro de
+ligne, compte local, montant d'origine, taux — et leur total, égal au montant
+cliqué. Fonctionne aussi colonne par colonne dans les vues par entité.
+
+**Télécharger le classeur Excel** en haut à droite.
+
+---
+
+## 2. La ligne de commande
 
 ```bash
-mageconso consolidate "G:/CORTHAY/CLOTURE MENSUELLES/2025/MA - *.xlsx" \
-    --closing 2025-12-31 \
-    --by-cost-centre \
-    --journal out/audit-2025.db \
-    -o out/consolide-2025.xlsx
+mageconso inspect      "MA - *.xlsx"                  # examiner les fichiers
+mageconso rates        "MA - *.xlsx" -o taux.xlsx     # préparer le fichier de taux
+mageconso consolidate  "MA - *.xlsx" --rates taux.xlsx -o out/consolide.xlsx
+mageconso check        --closing 2025-12-31           # vérifier le paramétrage
+mageconso trace        --journal out/audit.db --run 1 --account "Cash Bank"
+```
+
+### Examiner les fichiers
+
+```bash
+mageconso inspect "G:/CORTHAY/CLOTURE MENSUELLES/2025/MA - *.xlsx"
+```
+
+Pour chaque fichier : entité reconnue, devise, période, feuilles (y compris
+masquées), équilibre de la balance ; puis les taux nécessaires à la clôture, en
+indiquant ceux qui manquent.
+
+### Préparer les taux
+
+```bash
+mageconso rates "MA - *.xlsx" -o taux.xlsx
+```
+
+Produit un fichier *devise ; clôture ; moyen ; historique* pour les seules
+devises utiles, pré-rempli avec les derniers taux connus (cellules surlignées à
+remplacer). Excel ou CSV ; en-têtes français ou anglais ; virgule décimale
+acceptée.
+
+### Consolider
+
+```bash
+mageconso consolidate "MA - *.xlsx" --rates taux.xlsx -o out/consolide-2025.xlsx \
+    --by-cost-centre --journal out/audit-2025.db
 ```
 
 | Option | Rôle |
 |---|---|
-| `--closing` | date de clôture, détermine le jeu de taux |
+| `--rates FICHIER` | taux de la clôture |
+| `--closing AAAA-MM-JJ` | date de clôture (défaut : lue dans les fichiers) |
+| `--reference FICHIER` | rapprochement ligne à ligne avec un classeur consolidé |
+| `--tolerance 1` | tolérance du rapprochement, en euros |
 | `--by-cost-centre` | ajoute les états par centre de coûts |
-| `--level detail\|summary` | niveau de finesse (défaut : `summary`, qui produit aussi le détail) |
-| `--entity CODE` | force l'entité si la feuille `Cover` ne permet pas de la reconnaître |
-| `--journal` | enregistre la piste d'audit (indispensable pour `trace`) |
-| `--strict` | code retour non nul si un contrôle bloquant échoue (utile en tâche planifiée) |
+| `--no-by-entity` | supprime les états par entité |
+| `--entity "fichier.xlsx=CODE"` | force l'entité d'un fichier non reconnu (répétable) |
+| `--journal FICHIER.db` | piste d'audit interrogeable (nécessaire pour `trace`) |
+| `--scale`, `--decimals`, `--negatives`, `--currency-position` | présentation ponctuelle |
+| `--open` | ouvre le classeur produit |
+| `--strict` | code retour 1 si un contrôle bloquant échoue (tâches planifiées) |
+| `--force` | consolide même si des taux manquent |
 
-### Le classeur produit
+**Si un taux manque**, la commande s'arrête et indique quoi faire :
+
+```
+Taux de change manquants au 2025-12-31 :
+  JPY : eom, average
+
+Preparez un fichier de taux pre-rempli :
+  mageconso rates 'MA - Mage Japon KK 2025.xlsx' ... -o taux.xlsx
+puis relancez avec --rates taux.xlsx  (ou --force pour continuer quand meme).
+```
+
+**Si des comptes ne sont pas mappés**, un CSV de propositions est écrit à côté
+du classeur (`… - mapping a completer.csv`).
+
+### Vérifier le paramétrage
+
+```bash
+mageconso check --closing 2025-12-31
+```
+
+À lancer après toute modification de `config/` : libellés orphelins, doublons,
+cibles de mapping inconnues, libellés d'élimination inexistants, taux manquants.
+
+---
+
+## 3. Le classeur produit
 
 | Onglet | Contenu |
 |---|---|
-| `Consolidated BS` / `Consolidated PL` | états de synthèse |
-| `Detailed BS` / `Detailed PL` | états ligne à ligne |
-| `BS by cost center` / `PL by cost center` | avec `--by-cost-centre` |
-| `Controls` | les 9 contrôles, en vert ou rouge, avec l'écart chiffré |
-| `Diagnostics` | avertissements et erreurs |
-| `Audit trail` | chaque montant relié à sa ligne source |
+| **Synthèse** | statut diffusable, chiffres clés, sources, taux appliqués, contrôles — **à lire en premier** |
+| Consolidated BS / PL | états de synthèse (le P&L avec sa colonne %) |
+| Detailed BS / PL | états ligne à ligne |
+| BS / PL by entity | une colonne par entité, ELIMINATION, TOTAL |
+| BS / PL by cost center | si demandé |
+| Gross margin | marge brute par famille de produits |
+| Rapprochement | si un classeur de référence a été fourni |
+| Mapping à compléter | si des comptes ont été exclus |
+| Controls, Diagnostics, Audit trail | onglets techniques, filtrables |
 
-Les cellules contiennent la **valeur numérique** et un format d'affichage : les
-montants restent réutilisables dans Excel.
+Les cellules contiennent la **valeur exacte** ; l'échelle (milliers, millions)
+est portée par le format de nombre. Un montant copié ou recalculé dans Excel
+reste donc juste. Excel applique ses propres séparateurs (ceux du poste).
 
-## 4. Lire les contrôles
+---
 
-**Commencez toujours par l'onglet `Controls`.**
+## 4. Les contrôles
 
-| Code | Contrôle | Si en échec |
-|---|---|---|
-| **C1** | Total actif = Total passif | Erreur de conversion ou balance source déséquilibrée. **Bloquant.** |
-| **C2** | Résultat du P&L = résultat porté au bilan | Incohérence entre les deux états. **Bloquant.** |
-| **C3** | Balance source équilibrée | Le fichier source est en cause, pas l'application. |
-| **C4** | Éliminations équilibrées | Une élimination sans contrepartie. |
-| **C5** | Mapping exhaustif | Des comptes sources sont **exclus** du consolidé. Voir `Diagnostics`. **Bloquant.** |
-| **C6** | Centres de coûts connus | Un centre absent de `cost_centers.yaml`. |
-| **C7** | Dates de clôture cohérentes | Des fichiers de périodes différentes ont été mélangés. |
-| **C8** | Taux disponibles | Un taux manque : les lignes concernées sont **exclues**. **Bloquant.** |
-| **C9** | Rapprochement au fichier de référence | Écart avec les états attendus. |
+| Code | Contrôle | Bloquant | Si en échec |
+|---|---|---|---|
+| C1 | Bilan équilibré | oui | Souvent la conséquence d'un compte exclu (voir C5) : l'écart affiché égale le montant manquant. |
+| C2 | Résultat du P&L = résultat porté au bilan | oui | Incohérence entre les deux états. |
+| C3 | Balances sources équilibrées | oui | Le fichier source est en cause. |
+| C4 | Éliminations équilibrées | non | Une élimination sans contrepartie. |
+| C5 | Tous les comptes sources sont mappés | oui | Voir l'onglet *Mapping à compléter*. |
+| C6 | Centres de coûts connus | non | Déclarer le centre dans `cost_centers.yaml`. |
+| C7 | Même date de clôture pour tous les fichiers | non | Des fichiers de périodes différentes ont été mélangés. |
+| C8 | Taux disponibles | oui | Compléter les taux. |
+| C9 | Rapprochement à la référence | oui | Voir l'onglet *Rapprochement*. |
+| C10 | Tout montant consolidé figure dans un état | oui | Un compte (souvent intragroupe non éliminé) n'est présenté nulle part. |
 
-Un contrôle bloquant en échec signifie que **les états ne doivent pas être
-diffusés**.
+**Un contrôle bloquant en échec signifie que les états ne doivent pas être
+diffusés.**
 
-### Diagnostics les plus fréquents
+### Diagnostics fréquents
 
 | Code | Signification | À faire |
 |---|---|---|
-| `MAP-UNKNOWN-ACCOUNT` | Compte source non mappé, **exclu** du consolidé | Ajouter la correspondance dans le fichier source ou dans `config/mapping/` |
-| `FX-RATE-MISSING` | Taux absent pour une devise | Compléter `config/fx.yaml` |
-| `ENT-UNKNOWN` | Entité non reconnue | Utiliser `--entity`, ou corriger `Cover!A1` |
-| `CC-NOT-PROVIDED` | Pas d'axe analytique dans la source | Normal pour les filiales aujourd'hui ; l'état par centre de coûts reste non ventilé pour elles |
-| `ELIM-RECIPROCITY` | Écart entre les deux côtés d'un intragroupe | Écart de change ou décalage d'enregistrement : à justifier |
-| `FX-CURRENCY-MISMATCH` | Devise du fichier ≠ devise paramétrée | Vérifier `Cover` ou `entities.yaml` |
+| `MAP-UNKNOWN-ACCOUNT` | compte source non mappé, **exclu** | reporter la correspondance (suggestion fournie) |
+| `MAP-STATEMENT-UNKNOWN` | compte groupe sans état (bilan ou résultat ?) | l'ajouter à `config/coa/group_coa.csv` |
+| `ELIM-RECIPROCITY` | les deux côtés d'un intragroupe ne concordent pas | écart de change ou de date à justifier ; il est porté sur la ligne de résidu |
+| `ELIM-ONE-SIDED` | flux intragroupe sans contrepartie, non éliminé | justifier, ou déclarer la contrepartie dans `eliminations.yaml` |
+| `ENT-DUPLICATE` | même entité dans deux fichiers | retirer le doublon |
+| `FX-RATE-INVERTED` / `FX-RATE-SUSPECT` | taux vraisemblablement faux | vérifier la saisie |
+| `CC-NOT-PROVIDED` | pas d'axe analytique dans la source | normal pour les filiales aujourd'hui (Q-5.4) |
 
-## 5. Justifier un montant
+---
 
-C'est la réponse à « d'où viennent ces 268 029 € ? ».
+## 5. Première mise en service : le rapprochement
 
-```bash
-mageconso trace --journal out/audit-2025.db --run 1 --account "Account Receivable"
-```
-
-```
-Entite               Fichier                Onglet            Lig  Compte source          Montant  Dev     Taux              EUR
-MAGE_SAS             MA - Mage SAS 2025.x   Trial balance       8  Account Receivable   260000.00  EUR        1        260000.00
-MAGE_JAPON_KK        MA - Mage Japon KK.x   Trial balance       8  Account Receivable 15400000.00  JPY   156.33         98509.56
-TOTAL                                                                                                                 358509.56
-```
-
-Chaque ligne donne le fichier, l'onglet, **le numéro de ligne**, le montant
-d'origine, le taux appliqué et le montant consolidé. Le total se réconcilie avec
-l'état.
-
-Le journal étant une base SQLite, il est aussi interrogeable directement :
-
-```sql
-SELECT entity, SUM(CAST(amount_eur AS REAL))
-FROM audit_lines WHERE run_id = 1 AND group_coa = 'Cash Bank'
-GROUP BY entity;
-```
-
-## 6. Paramétrer la présentation
-
-Tout se règle dans `config/presentation.yaml`. **Aucun de ces paramètres ne
-modifie un montant consolidé** : le calcul se fait à pleine précision, la
-présentation s'applique au rendu.
-
-```yaml
-scale: thousands            # units | thousands | millions
-decimals: 1
-rounding: ROUND_HALF_UP
-decimal_separator: ","
-thousands_separator: " "
-currency_symbol: "€"
-currency_position: suffix   # prefix | suffix | none
-show_zeros: true
-zero_display: "-"           # zero | dash | blank | libellé libre
-negative_format: parentheses # minus | parentheses
-percent:
-  decimals: 1
-  zero_display: blank
-detail_level: summary       # summary | detail | both
-period_order: chronological # chronological | reverse
-locale: fr_FR
-```
-
-Effet sur un même montant de 1 234 567 € :
-
-| Paramétrage | Rendu |
-|---|---|
-| défaut | `1 234 567 €` |
-| `scale: thousands` | `1 235k €` |
-| `scale: millions, decimals: 2` | `1,23M €` |
-| `negative_format: minus` (sur −640 378) | `-640 378 €` |
-| `negative_format: parentheses` | `(640 378) €` |
-| `currency_position: prefix` | `€ 1 234 567` |
-
-Quatre paramètres sont aussi surchargeables en ligne de commande, pour un tirage
-ponctuel sans modifier le fichier :
+Avant d'utiliser l'application pour une clôture réelle, consolidez une clôture
+**déjà produite** par le processus Excel et comparez :
 
 ```bash
-mageconso consolidate "..." -o out/en-milliers.xlsx \
-    --scale thousands --decimals 1 --negatives minus
+mageconso consolidate "2025/MA - *.xlsx" --rates taux-2025.xlsx \
+    --reference "ANALYSE/EC+/2025.xlsx" -o out/rapprochement-2025.xlsx
 ```
 
-## 7. Ajuster les règles métier
+ou, dans l'interface, déposez le classeur EC+ comme *classeur de référence*.
+
+L'onglet **Rapprochement** liste chaque poste — référence, calculé, écart —
+trié par écart décroissant. Chaque écart doit être expliqué : erreur de
+l'application, ou règle métier mal reconstituée (voir
+`docs/06-questions-clarification.md`). Les postes les plus exposés sont
+identifiés dans `docs/10-rapport-rapprochement.md` §10.6.
+
+---
+
+## 6. Ajuster les règles
 
 | Besoin | Fichier |
 |---|---|
-| Ajouter ou retirer une entité | `config/entities.yaml` |
-| Saisir les taux d'une clôture | `config/fx.yaml` |
-| Ajouter une correspondance de compte | `config/mapping/<entité>.csv` |
-| Modifier un couple d'élimination | `config/eliminations.yaml` |
-| Changer un regroupement de postes | `config/coa/statement_bs.yaml` / `_pl.yaml` |
-| Déclarer un centre de coûts | `config/cost_centers.yaml` |
+| Entités du périmètre | `config/entities.yaml` |
+| Taux (alternative au fichier `--rates`) | `config/fx.yaml` |
+| Correspondance d'un compte | `config/mapping/<entité>.csv`, ou feuille *Mapping accounts* du fichier source (prioritaire) |
+| Couples d'élimination, lignes de résidu | `config/eliminations.yaml` |
+| Regroupements de postes | `config/coa/statement_bs.yaml` / `statement_pl.yaml` |
+| Familles de marge | `config/coa/statement_pl.yaml`, `margin_families` |
+| Centres de coûts | `config/cost_centers.yaml` |
+| Présentation par défaut | `config/presentation.yaml` |
 
-Les fichiers `.csv` s'ouvrent dans Excel. Les fichiers `.yaml` s'éditent dans un
-éditeur de texte ; l'indentation est significative.
+Après chaque modification : `mageconso check`.
 
-> Attention aux libellés : la clé de consolidation est le **libellé** du compte
-> groupe, et certains comportent des fautes de frappe présentes dans les fichiers
-> Mage (`Stock shoes subsisdairies`, `Mage Asia Pacfic`). **Ne les corrigez pas**
-> d'un seul côté : la correspondance serait rompue et les comptes concernés
-> disparaîtraient du consolidé (le contrôle C5 le signalerait).
+> **Attention aux libellés** : la clé de consolidation est le *libellé* du compte
+> groupe, et certains comportent des fautes présentes dans les fichiers Mage
+> (`Stock shoes subsisdairies`, `Mage Asia Pacfic`). Ne les corrigez pas d'un seul
+> côté : la correspondance serait rompue (C5 le signalerait).
 
-## 8. Clôture mensuelle — marche à suivre
+---
+
+## 7. Clôture mensuelle — marche à suivre
 
 1. Rassembler les management accounts de la période.
-2. `mageconso inspect` sur chaque fichier — vérifier entité, devise, somme = 0.
-3. Saisir les taux de la clôture dans `config/fx.yaml`.
-4. `mageconso consolidate` avec `--closing`, `--by-cost-centre` et `--journal`.
-5. Ouvrir l'onglet `Controls` : **tout doit être au vert**.
-6. Lire `Diagnostics` et traiter chaque `MAP-UNKNOWN-ACCOUNT`.
-7. Rapprocher des états de la clôture précédente ; justifier les variations avec
-   `trace`.
-8. Archiver le classeur **et** le fichier `.db` : ensemble, ils permettent de
-   rejouer et de justifier la clôture.
+2. `mageconso ui` et déposer les fichiers — toutes les balances doivent être
+   équilibrées et toutes les entités reconnues.
+3. Saisir les taux de la clôture (source banque-france.fr).
+4. Consolider. Bandeau vert ? Sinon, traiter l'onglet *Contrôles*, puis
+   *Mapping à compléter* et *Diagnostics*.
+5. Rapprocher des états de la clôture précédente ; justifier les variations en
+   cliquant sur les montants.
+6. Télécharger et archiver le classeur (et le journal `.db` si la ligne de
+   commande a été utilisée avec `--journal`).

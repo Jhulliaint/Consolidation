@@ -12,8 +12,13 @@
 | **L5** | Présentation paramétrable, séparée du calcul | **Fait** |
 | **L6** | Export Excel : états, contrôles, diagnostics, piste d'audit | **Fait** |
 | **L7** | Journal d'audit SQLite interrogeable + commande `trace` | **Fait** |
-| **L8** | Tests automatisés | **Fait** — 44 tests |
+| **L8** | Tests automatisés | **Fait** — 97 tests |
 | **L9** | Documentation installation et utilisateur | **Fait** |
+| **L10** | Revue : 5 défauts de calcul corrigés (voir `CHANGELOG.md`) | **Fait** |
+| **L11** | Interface graphique locale, traçabilité au clic | **Fait** |
+| **L12** | Outil de rapprochement à un classeur de référence | **Fait** |
+| **L13** | Taux : fichier, pré-contrôle, détection d'erreurs ; suggestions de mapping | **Fait** |
+| **L14** | Vues par entité, % du CA, marge par famille ; `mageconso check` ; contrôle C10 | **Fait** |
 
 ## 9.2 Suite, par ordre de priorité
 
@@ -24,8 +29,9 @@ La seule étape qui démontre la conformité. Dès réception des fichiers 2025 
 1. `mageconso inspect` sur chaque management account pour valider la lecture ;
 2. saisie des taux 2025 réels dans `config/fx.yaml` (les valeurs actuelles sont
    des **placeholders** explicitement marqués) ;
-3. exécution, puis comparaison ligne à ligne aux états de référence via le
-   contrôle **C9** ;
+3. exécution avec `--reference "EC+/2025.xlsx"` (ou dépôt du classeur de
+   référence dans l'interface) : comparaison ligne à ligne, contrôle **C9** et
+   onglet *Rapprochement* — **l'outil est prêt** ;
 4. analyse et documentation de chaque écart ;
 5. arbitrage : écart imputable à l'application, ou à une règle mal reconstituée.
 
@@ -74,18 +80,17 @@ les comparatifs N-1. Dépend de Q-8.1.
 
 Charge : 3 à 4 jours.
 
-### Étape 6 — Interface utilisateur *(selon Q-11.2)*
+### Étape 6 — Interface utilisateur *(faite en 0.2)*
 
-Le métier est déjà une bibliothèque autonome. Une interface web minimale
-(dépôt de fichiers, tableau de contrôles, téléchargement de l'export) représente
-3 à 5 jours et ne touche pas au moteur.
+Interface locale livrée (`mageconso ui`). Évolutions possibles selon Q-11.1 /
+Q-12.1 : accès multi-utilisateurs sur un serveur, droits par entité.
 
 ### Étape 7 — Extensions fonctionnelles
 
 Par ordre de valeur décroissante :
 
 1. tableau de flux de trésorerie, méthodes directe et indirecte (Q-10.4) — 4 à 6 j ;
-2. analyse de marge par famille en état autonome (`Gross margin`) — 2 j ;
+2. ~~analyse de marge par famille~~ — faite en 0.2 ;
 3. génération de la liasse fiscale depuis `liasse_fiscale.csv` — 3 j ;
 4. reprise des flux `PRI MAGE` / `PRI SICCA` — à cadrer (Q-7.7, Q-13.3).
 

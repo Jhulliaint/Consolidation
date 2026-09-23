@@ -145,20 +145,30 @@ portant fichier, onglet et numéro de ligne.
 | C8 | Taux disponibles | ✅ |
 | **Total** | | **10/10** |
 
-Suite de tests : **44 tests au vert**.
+Suite de tests : **97 tests au vert** (version 0.2).
 
 ## 10.6 E. Ce qui reste à démontrer
 
 **Le rapprochement aux états Mage 2025 réels.** Il constitue la seule preuve de
-conformité qui compte, et il est prêt à être exécuté : le contrôle **C9** accepte
-un dictionnaire de valeurs attendues et produit l'écart poste par poste.
+conformité qui compte, et l'outil est prêt (version 0.2) : il lit le classeur
+`EC+/2025.xlsx` lui-même — y compris ses feuilles *very hidden* — et compare
+chaque poste des états détaillés :
+
+```bash
+mageconso consolidate "2025/MA - *.xlsx" --rates taux-2025.xlsx \
+    --reference "ANALYSE/EC+/2025.xlsx" -o out/rapprochement-2025.xlsx
+```
+
+Résultat : contrôle **C9** et onglet *Rapprochement* trié par écart décroissant
+(référence, calculé, écart, écart %, cellule d'origine). L'outil est testé sur un
+classeur de référence synthétique au même format.
 
 Marche à suivre dès réception des fichiers (§9.2, étape 1) :
 
 1. saisir les taux 2025 réels dans `config/fx.yaml` — les valeurs actuelles sont
    des placeholders explicitement marqués ;
 2. exécuter la consolidation sur les management accounts 2025 ;
-3. alimenter C9 avec les totaux de `Mage SAS Consolidated accounts 2025` ;
+3. passer `EC+/2025.xlsx` en `--reference` ;
 4. documenter et arbitrer chaque écart.
 
 ### Écarts déjà anticipés

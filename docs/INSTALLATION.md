@@ -24,6 +24,9 @@ pip install -e .
 ```
 
 Deux dépendances seulement : `openpyxl` (Excel) et `PyYAML` (configuration).
+L'interface graphique n'en ajoute aucune : elle s'appuie sur le serveur HTTP de
+la bibliothèque standard, écoute uniquement sur `127.0.0.1` et ne charge aucune
+ressource externe.
 
 ## Vérification
 
@@ -31,27 +34,33 @@ Deux dépendances seulement : `openpyxl` (Excel) et `PyYAML` (configuration).
 # 1. générer un jeu de démonstration
 python samples/make_samples.py samples/data
 
-# 2. consolider
+# 2a. interface graphique
+mageconso ui
+
+# 2b. ou ligne de commande
 mageconso consolidate "samples/data/*.xlsx" -o out/demo.xlsx --by-cost-centre
 ```
 
-Sortie attendue :
+Sortie attendue de la ligne de commande :
 
 ```
-  lu : MA - Mage Japon KK 2025.xlsx (10 lignes, JPY)
-  lu : MA - Mage SAS 2025.xlsx (15 lignes, EUR)
-
-Etats consolides ecrits dans : out/demo.xlsx
+  lu : MA - Mage Japon KK 2025.xlsx  -> MAGE_JAPON_KK (10 lignes, JPY)
+  lu : MA - Mage SAS 2025.xlsx  -> MAGE_SAS (15 lignes, EUR)
 
 --- Synthese ---
-  Revenue                    : 1 646 673 €
-  Gross Profit/(Loss)        : 1 696 673 €
-  Total Net/(loss) Profit    : 851 898 €
-  Total assets               : 917 359 €
-  10/10 controles OK
+  Revenue                         :        1 646 673 €
+  ...
+  Total assets                    :          917 359 €
+
+  11/11 controles OK
 ```
 
-Si les 10 contrôles passent, l'installation est fonctionnelle.
+Si les 11 contrôles passent, l'installation est fonctionnelle. Vérifiez aussi le
+paramétrage :
+
+```bash
+mageconso check
+```
 
 ## Tests
 
@@ -60,7 +69,7 @@ pip install -e ".[dev]"
 python -m pytest -q
 ```
 
-Attendu : `44 passed`.
+Attendu : `97 passed`.
 
 ## Sans installation
 
@@ -102,8 +111,10 @@ Consolidation/
 
 Deux points impératifs.
 
-**1. Renseigner les taux de change.** `config/fx.yaml` contient pour 2025 des
-valeurs de **démonstration**, explicitement marquées :
+**1. Renseigner les taux de change.** Le plus simple : `mageconso rates … -o
+taux.xlsx` produit le fichier à compléter, passé ensuite avec `--rates` (ou
+saisissez les taux à l'étape 2 de l'interface). `config/fx.yaml` contient pour
+2025 des valeurs de **démonstration**, explicitement marquées :
 
 ```yaml
   # A REMPLACER PAR LES TAUX REELS DE LA CLOTURE 2025.

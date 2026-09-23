@@ -24,9 +24,16 @@ src/mageconso/
 ├── controls.py          contrôles C1 à C9
 ├── reports/             construction des états (par entité, par centre de coûts)
 ├── formatting.py        couche de présentation, isolée du calcul
-├── exporters/excel.py   export Excel (états + contrôles + diagnostics + audit)
+├── exporters/excel.py   export Excel (synthèse, états, contrôles, audit…)
+├── pipeline.py          chaîne complète, partagée par CLI et interface
+├── rates.py             taux : fichier, besoins, contrôle de vraisemblance
+├── reconcile.py         rapprochement à un classeur de référence
+├── suggest.py           suggestions de mapping
+├── checks.py            vérification du paramétrage
 ├── audit.py             journal d'audit SQLite, interrogeable
-└── cli.py               interface en ligne de commande
+├── cli.py               interface en ligne de commande
+├── webui.py             interface graphique locale (serveur HTTP stdlib)
+└── web/index.html       page unique, sans ressource externe
 ```
 
 Correspondance avec la séparation demandée au cahier des charges :
@@ -103,16 +110,28 @@ Les taux de change sont eux aussi des `Decimal` : `156.33` n'est pas
   fichier `.db` s'archive avec la clôture.
 - Chaque exécution est un `run` horodaté : deux consolidations sont comparables.
 
-### Interface : ligne de commande, cœur réutilisable
+### Interfaces : graphique locale et ligne de commande
 
-Le prototype expose une CLI (`mageconso consolidate|inspect|trace`). Tout le
-métier est dans une bibliothèque importable, sans dépendance à la CLI : une
-interface web (upload de fichiers, restitution HTML) se greffe sans toucher au
-moteur. À arbitrer selon Q-11.2.
+Les deux appellent `pipeline.run()` : elles ne peuvent pas diverger sur le
+calcul. L'interface graphique (`mageconso ui`) repose sur le serveur HTTP de la
+**bibliothèque standard** — aucune dépendance ajoutée — et sur une page unique
+sans ressource externe :
+
+- écoute sur `127.0.0.1` seulement ; en-tête `Host` vérifié (parade au *DNS
+  rebinding*) ; écritures en `application/json` uniquement (pas d'action
+  déclenchable par un formulaire tiers) ; fichiers déposés dans un répertoire
+  temporaire supprimé à l'arrêt ;
+- tout le calcul **et toute la mise en forme des nombres** sont faits côté
+  serveur, par le même formateur que l'export Excel : l'écran et le classeur
+  affichent la même chose.
+
+Framework web écarté (Flask, Streamlit) : une dépendance de plus pour un usage
+local mono-utilisateur, sans bénéfice fonctionnel ici. À reconsidérer pour un
+usage multi-utilisateurs sur serveur (Q-11.1, Q-12.1).
 
 ## 7.4 Stratégie de tests
 
-Quatre niveaux, 44 tests actuellement au vert :
+Cinq niveaux, 97 tests actuellement au vert :
 
 1. **Lecture** — extraction du `Cover`, mapping local, variantes numériques
    (`1 234,56`, `1,234.56`, `(1 234)`, `-`, `#DIV/0!`).
@@ -124,13 +143,21 @@ Quatre niveaux, 44 tests actuellement au vert :
    `850 000 + 24 600 000 / 156,33 − 90 000 = 917 359,43`.
 4. **Présentation** — deux paramétrages radicalement différents donnent des
    rendus différents et des montants identiques.
+5. **Robustesse** — chaque incident réaliste de clôture (écart de réciprocité,
+   flux sans contrepartie, compte non mappé, fichier en double, taux inversé)
+   est injecté dans le jeu de démonstration ; on vérifie que le moteur ne
+   produit jamais un état faussement propre.
+
+L'interface graphique est testée par son API et sa couche HTTP, et a été
+parcourue dans un navigateur (Chromium, via Playwright).
 
 Un test vérifie que le journal d'audit **se réconcilie ligne à ligne** avec les
 états : pour chaque compte groupe, la somme des enregistrements d'audit égale le
 montant consolidé. C'est la garantie que la traçabilité n'est pas décorative.
 
 Ce qui **n'est pas** testé, faute des fichiers : la conformité aux états 2025
-réels (contrôle C9, prêt à l'emploi dès réception).
+réels. L'outil de rapprochement (C9) est prêt et testé sur un classeur de
+référence synthétique au même format.
 
 ## 7.5 Déploiement
 
