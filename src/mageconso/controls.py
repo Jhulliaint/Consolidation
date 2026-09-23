@@ -18,11 +18,11 @@ from .config import AppConfig, norm
 from .importers.excel import SourceWorkbook
 from .models import (
     ZERO,
-    eur,
     ConsolidationResult,
     ControlResult,
     Severity,
     Statement,
+    eur,
 )
 from .reports import StatementReport
 
@@ -35,7 +35,7 @@ def run_controls(
     bs: StatementReport | None = None,
     pl: StatementReport | None = None,
     workbooks: Sequence[SourceWorkbook] = (),
-    reference: dict[str, Decimal] | None = None,
+    reconciliation=None,
     tolerance: Decimal = TOL,
 ) -> list[ControlResult]:
     out: list[ControlResult] = []
@@ -47,11 +47,11 @@ def run_controls(
         out.append(
             ControlResult(
                 code="C1",
-                label="Bilan equilibre (Total actif = Total passif)",
+                label="Bilan équilibré (total actif = total passif)",
                 passed=abs(assets - liab) <= tolerance,
                 expected=assets,
                 actual=liab,
-                detail=f"ecart = {eur(liab - assets)} EUR",
+                detail=f"écart = {eur(liab - assets)} EUR",
             )
         )
 
@@ -66,12 +66,12 @@ def run_controls(
         out.append(
             ControlResult(
                 code="C2",
-                label="Resultat net P&L = ligne 'Profit/loss net income' du bilan",
+                label="Résultat du compte de résultat = résultat porté au bilan",
                 passed=abs(pl_net - bs_net) <= tolerance,
                 expected=pl_net,
                 actual=bs_net,
                 severity=Severity.ERROR,
-                detail=f"ecart = {eur(bs_net - pl_net)} EUR",
+                detail=f"écart = {eur(bs_net - pl_net)} EUR",
             )
         )
 
@@ -81,7 +81,7 @@ def run_controls(
         out.append(
             ControlResult(
                 code="C3",
-                label=f"Balance source equilibree - {wb.path.name}",
+                label=f"Balance source équilibrée - {wb.path.name}",
                 passed=abs(total) <= tolerance,
                 expected=ZERO,
                 actual=total,
@@ -107,12 +107,12 @@ def run_controls(
         out.append(
             ControlResult(
                 code="C4",
-                label=f"Eliminations equilibrees ({statement.value})",
+                label=("Éliminations équilibrées (bilan)" if statement is Statement.BALANCE_SHEET else "Éliminations équilibrées (compte de résultat)"),
                 passed=abs(elim) <= tolerance,
                 expected=ZERO,
                 actual=elim,
                 severity=Severity.WARNING,
-                detail="somme algebrique des eliminations",
+                detail="somme algébrique des écritures d'élimination",
             )
         )
 
@@ -127,13 +127,13 @@ def run_controls(
     out.append(
         ControlResult(
             code="C5",
-            label="Exhaustivite du mapping des comptes",
+            label="Tous les comptes sources sont mappés",
             passed=not unmapped,
             severity=Severity.ERROR,
             detail=(
-                "tous les comptes sources sont mappes"
+                "aucun compte exclu"
                 if not unmapped
-                else f"{len(unmapped)} compte(s) non mappe(s)"
+                else f"{len(unmapped)} compte(s) non mappé(s), exclu(s) du consolidé"
             ),
         )
     )
@@ -145,7 +145,7 @@ def run_controls(
     out.append(
         ControlResult(
             code="C6",
-            label="Centres de couts connus",
+            label="Centres de coûts connus",
             passed=not unknown_cc,
             severity=Severity.WARNING,
             detail=", ".join(unknown_cc) if unknown_cc else "aucun centre inconnu",
@@ -157,10 +157,10 @@ def run_controls(
     out.append(
         ControlResult(
             code="C7",
-            label="Coherence des dates de cloture entre fichiers",
+            label="Même date de clôture pour tous les fichiers",
             passed=len(periods) <= 1,
             severity=Severity.WARNING,
-            detail=", ".join(sorted(periods)) if periods else "non renseignee",
+            detail=", ".join(sorted(periods)) if periods else "non renseignée",
         )
     )
 
@@ -172,28 +172,55 @@ def run_controls(
             label="Taux de change disponibles pour toutes les devises",
             passed=not missing_fx,
             severity=Severity.ERROR,
-            detail=f"{len(missing_fx)} taux manquant(s)",
+            detail=f"{len(missing_fx)} taux manquant(s)" if missing_fx else "tous les taux sont renseignés",
         )
     )
 
     # --- C9 : rapprochement au fichier de reference -----------------------
-    if reference:
-        for caption, expected in reference.items():
-            actual = result.total(caption) if not caption.startswith("=") else ZERO
-            if bs is not None and caption in bs.totals:
-                actual = bs.total(caption)
-            elif pl is not None and caption in pl.totals:
-                actual = pl.total(caption)
-            out.append(
-                ControlResult(
-                    code="C9",
-                    label=f"Rapprochement reference - {caption}",
-                    passed=abs(actual - Decimal(str(expected))) <= tolerance,
-                    expected=Decimal(str(expected)),
-                    actual=actual,
-                    detail="comparaison au fichier consolide de reference",
-                )
+    if reconciliation is not None:
+        counts = reconciliation.counts()
+        gaps = reconciliation.gaps
+        out.append(
+            ControlResult(
+                code="C9",
+                label=f"Rapprochement à la référence - {reconciliation.reference_file}",
+                passed=not gaps,
+                severity=Severity.ERROR,
+                expected=ZERO,
+                actual=reconciliation.max_gap if gaps else ZERO,
+                detail=(
+                    f"{counts.get('OK', 0)} ligne(s) conforme(s), {len(gaps)} écart(s) "
+                    f"au-delà de {eur(reconciliation.tolerance)} EUR"
+                    + (f", écart max {eur(reconciliation.max_gap)} EUR" if gaps else "")
+                ),
             )
+        )
+
+    # --- C10 : tout montant consolide est presente dans un etat ------------
+    # Un compte groupe absent de la structure des etats (ex. creance sur une
+    # filiale non eliminee) disparaitrait du rapport sans que rien ne le signale.
+    presented = {norm(x) for x in cfg.bs.detail_lines() + cfg.pl.detail_lines()}
+    hidden: dict[str, Decimal] = {}
+    for ln in result.lines:
+        if norm(ln.group_coa) not in presented:
+            hidden[ln.group_coa] = hidden.get(ln.group_coa, ZERO) + ln.amount_eur
+    hidden = {k: v for k, v in hidden.items() if abs(v) > tolerance}
+    out.append(
+        ControlResult(
+            code="C10",
+            label="Tout montant consolidé figure dans un état",
+            passed=not hidden,
+            severity=Severity.ERROR,
+            expected=ZERO,
+            actual=sum(hidden.values(), ZERO),
+            detail=(
+                "aucun montant hors structure"
+                if not hidden
+                else "non présentés : " + "; ".join(
+                    f"{k} ({eur(v)} EUR)" for k, v in sorted(hidden.items()))
+            ),
+        )
+    )
 
     return out
 

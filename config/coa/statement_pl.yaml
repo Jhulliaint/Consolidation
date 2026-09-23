@@ -249,13 +249,93 @@ ebita:
     - Other income (expense) net
     - Restructuring charges
 
-# Analyse de marge par famille de produits (FAIT OBSERVE : bloc F:M du
-# classeur de reference). Chaque famille = revenus / cout des ventes / taux.
+# Analyse de marge par famille de produits - FAIT OBSERVE : bloc F:M lignes
+# 28-31 de "Detailed Consolidated PL" (EC+/2025.xlsx). Les regroupements
+# reprennent les plages des formules d'origine, par exemple :
+#   SHOES   revenu = SUM(C13:C14)   cout = SUM(C52:C63)
+#   SLG     revenu = C28 + C29      cout = SUM(C90:C98)
+#   BESPOKE revenu = C37            cout = SUM(C115:C123)
+#   BESPOKE & SHOES = SHOES + BESPOKE
+# NB (FAIT OBSERVE) : la main-d'oeuvre et les frais de fabrication, les
+# matieres premieres et les en-cours sont integralement affectes a SHOES ;
+# les sandales et les "autres" ne figurent dans aucune famille.
 margin_families:
-  SHOES:      {revenue: [Shoe Sales, Shoe Sales distributors]}
-  SNEAKERS:   {revenue: [Sneaker Sales, Sneaker Sales distributors]}
-  LOAFERS:    {revenue: [Loafer Sales, Loafer Sales distributors]}
-  BELT:       {revenue: [Belt Sales, Belt Sales distributors]}
-  SLG:        {revenue: [SLG Sales, SLG Sales distributors]}
-  LG:         {revenue: [LG Sales, LG Sales distributors]}
-  BESPOKE:    {revenue: [Bespoke shoes]}
+  SLG:
+    revenue: [SLG Sales, SLG Sales distributors]
+    cost:
+      - Opening stock SLG Mage SAS
+      - Purchases SLG
+      - Raw material consumed for SLG
+      - Subcontractor for SLG
+      - Closing stock SLG Mage SAS
+      - Other costs SLG
+      - Opening stock SLG subsidiaries
+      - Purchases SLG from Mage
+      - Closing stock SLG subsidiaries
+  LG:
+    revenue: [LG Sales, LG Sales distributors]
+    cost:
+      - Opening stock LG
+      - Purchases raw material for LG
+      - Subcontractor for LG
+      - Closing stock LG
+      - Opening stock LG subsidiaries
+      - Purchases LG from Mage
+      - Closing stock LG subsidiaries
+  SHOES:
+    revenue: [Shoe Sales, Shoe Sales distributors]
+    cost:
+      - Manufacturing labour costs
+      - Manufacturing overhead costs
+      - Opening stock raw material
+      - Purchases raw material
+      - Closing stock raw material
+      - Opening stock in progress
+      - Closing stock in progress
+      - Opening stock shoes Mage SAS
+      - Closing stock shoes Mage SAS
+      - Opening stock shoes subsidiaries
+      - Purchases shoes from Mage
+      - Closing stock shoes subsidiaries
+  SNEAKERS:
+    revenue: [Sneaker Sales, Sneaker Sales distributors]
+    cost:
+      - Opening stock sneakers
+      - Purchases sneakers
+      - Closing stock sneakers
+      - Opening stock sneakers subsidiaries
+      - Purchases sneakers from Mage
+      - Closing stock sneakers subsidiaries
+  LOAFERS:
+    revenue: [Loafer Sales, Loafer Sales distributors]
+    cost:
+      - Opening stock loafers
+      - Purchases Shoes Loafers
+      - Closing stock loafers
+      - Opening stock loafers subsidiaries
+      - Purchases loafers from Mage
+      - Closing stock loafers subsidiaries
+  BELT:
+    revenue: [Belt Sales, Belt Sales distributors]
+    cost:
+      - Opening stock belts Mage SAS
+      - Closing stock belts Mage SAS
+      - Opening stock belts subsidiaries
+      - Purchases belts from Mage
+      - Closing stock belts subsidiaries
+      - Raw material consumed for belts
+      - Other costs belts
+  BESPOKE:
+    revenue: [Bespoke shoes]
+    cost:
+      - Manufacturing costs bespokes
+      - Purchases Bespokes from SICCA
+      - Opening stock raw material bespokes
+      - Purchases raw material bespokes
+      - Closing stock raw material bespokes
+      - Opening stock in progress bespokes
+      - Closing stock in progress bespokes
+      - Opening stock shoes bespokes
+      - Closing stock shoes bespokes
+  BESPOKE & SHOES:
+    combine: [SHOES, BESPOKE]

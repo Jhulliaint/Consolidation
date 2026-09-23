@@ -57,7 +57,7 @@ class ConsolidationEngine:
     def _ingest(
         self, wb: SourceWorkbook, result: ConsolidationResult, *, closing: str | None
     ) -> None:
-        entity_code = wb.entity_code or self._resolve_entity(wb)
+        entity_code = wb.entity_code or self.resolve_entity(wb)
         if entity_code is None:
             result.diagnostics.append(
                 Diagnostic(
@@ -128,6 +128,7 @@ class ConsolidationEngine:
         result.entity_codes.append(entity_code)
         closing_key = closing or wb.closing or f"{result.period.year}-12-31"
         unknown_accounts: dict[str, Decimal] = {}
+        unclassified: dict[str, Decimal] = {}
 
         for line in wb.lines:
             group = self._map_account(entity_code, line.local_account, wb)
@@ -137,11 +138,13 @@ class ConsolidationEngine:
                 )
                 continue
 
-            statement = (
-                wb.group_coa.get(norm(group))
-                or self.cfg.statement_of(group)
-                or Statement.PROFIT_AND_LOSS
-            )
+            statement = wb.group_coa.get(norm(group)) or self.cfg.statement_of(group)
+            if statement is None:
+                # Jamais de classement par defaut : un compte de bilan pris pour
+                # un compte de resultat serait converti au mauvais taux et
+                # fausserait le resultat.
+                unclassified[group] = unclassified.get(group, ZERO) + line.amount
+                continue
             cost_centre = self._cost_centre(entity_code, line.cost_centre)
             rate_type = self.cfg.rate_type_for(statement, group)
             rate = self.cfg.rate(currency, closing_key, rate_type)
@@ -227,6 +230,22 @@ class ConsolidationEngine:
                     entity=entity_code,
                     source_file=wb.path.name,
                     context=acct,
+                )
+            )
+
+        for group, amount in sorted(unclassified.items()):
+            result.diagnostics.append(
+                Diagnostic(
+                    code="MAP-STATEMENT-UNKNOWN",
+                    severity=Severity.ERROR,
+                    message=(
+                        f"Compte groupe '{group}' ({eur(amount)} {currency}) : bilan "
+                        "ou resultat ? Inconnu du plan groupe - EXCLU. Ajoutez-le a "
+                        "config/coa/group_coa.csv avec son etat."
+                    ),
+                    entity=entity_code,
+                    source_file=wb.path.name,
+                    context=group,
                 )
             )
 
@@ -584,7 +603,7 @@ class ConsolidationEngine:
                 return Period(wb.fiscal_year, None)
         return Period(0, None)
 
-    def _resolve_entity(self, wb: SourceWorkbook) -> str | None:
+    def resolve_entity(self, wb: SourceWorkbook) -> str | None:
         """Rapproche le nom lu sur la feuille Cover d'un code d'entite."""
         if not wb.entity_name:
             return None

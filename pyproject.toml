@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "mageconso"
-version = "0.1.0"
+version = "0.2.0"
 description = "Consolidation automatisee des management accounts Mage SAS"
 requires-python = ">=3.10"
 dependencies = ["openpyxl>=3.1", "PyYAML>=6.0"]
@@ -17,6 +17,9 @@ mageconso = "mageconso.cli:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.setuptools.package-data]
+"mageconso.web" = ["*.html"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

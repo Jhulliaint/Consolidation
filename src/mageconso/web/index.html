@@ -1,0 +1,741 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Consolidation Mage</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 16 16%22%3E%3Crect width=%2216%22 height=%2216%22 rx=%223%22 fill=%22%231f4e79%22/%3E%3Cpath d=%22M4 11V5h2l2 3 2-3h2v6h-2V8l-2 3-2-3v3z%22 fill=%22white%22/%3E%3C/svg%3E">
+<style>
+:root {
+  --bg: #f6f7f9; --panel: #ffffff; --ink: #1d2330; --muted: #5d6576; --line: #e2e5eb;
+  --line-strong: #c9ced8; --accent: #1f4e79; --accent-ink: #ffffff; --accent-soft: #e8eff7;
+  --ok: #1e7b45; --ok-soft: #e4f4ea; --warn: #8a5a00; --warn-soft: #fff4d6;
+  --err: #a8201a; --err-soft: #fde7e6; --neg: #a8201a; --section: #f1f3f6;
+  --shadow: 0 1px 2px rgba(16,24,40,.06), 0 1px 3px rgba(16,24,40,.08);
+  --radius: 8px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #12151b; --panel: #1a1e26; --ink: #e6e9ef; --muted: #9aa3b2; --line: #2a303b;
+    --line-strong: #3a4250; --accent: #6ea8dc; --accent-ink: #0d1117; --accent-soft: #1d2a38;
+    --ok: #5cc98a; --ok-soft: #173024; --warn: #e6b450; --warn-soft: #33290f;
+    --err: #ff8a80; --err-soft: #3a1a19; --neg: #ff9d94; --section: #212631;
+    --shadow: none;
+  }
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; background: var(--bg); color: var(--ink);
+  font: 14px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+button, input, select { font: inherit; color: inherit; }
+a { color: var(--accent); }
+[hidden] { display: none !important; }
+
+/* ---- barre du haut ---- */
+.topbar { position: sticky; top: 0; z-index: 20; display: flex; align-items: center; gap: 24px;
+  padding: 10px 24px; background: var(--panel); border-bottom: 1px solid var(--line); }
+.brand { font-weight: 650; letter-spacing: .01em; white-space: nowrap; }
+.brand small { font-weight: 400; color: var(--muted); margin-left: 6px; }
+.steps { display: flex; gap: 4px; margin: 0 auto; }
+.step { display: flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 999px;
+  border: 0; background: transparent; color: var(--muted); cursor: pointer; }
+.step .n { display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 50%;
+  border: 1px solid var(--line-strong); font-size: 12px; font-weight: 600; }
+.step[aria-current="step"] { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+.step[aria-current="step"] .n { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.step.done .n { background: var(--ok); color: #fff; border-color: var(--ok); }
+.step:disabled { cursor: default; opacity: .55; }
+.period { color: var(--muted); white-space: nowrap; font-size: 13px; }
+
+main { max-width: 1320px; margin: 0 auto; padding: 24px; }
+h1 { font-size: 20px; margin: 0 0 4px; }
+h2 { font-size: 15px; margin: 0 0 12px; }
+.lead { color: var(--muted); margin: 0 0 20px; }
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius);
+  box-shadow: var(--shadow); padding: 20px; margin-bottom: 16px; }
+.row { display: flex; gap: 16px; flex-wrap: wrap; align-items: flex-start; }
+.grow { flex: 1 1 320px; min-width: 0; }
+
+/* ---- depot de fichiers ---- */
+.drop { border: 2px dashed var(--line-strong); border-radius: var(--radius); padding: 28px;
+  text-align: center; color: var(--muted); cursor: pointer; transition: .15s; }
+.drop:hover, .drop.over { border-color: var(--accent); background: var(--accent-soft); color: var(--ink); }
+.drop strong { display: block; color: var(--ink); font-size: 15px; margin-bottom: 4px; }
+.drop.small { padding: 14px; }
+
+/* ---- tableaux simples ---- */
+table { border-collapse: collapse; width: 100%; }
+.grid th, .grid td { padding: 8px 10px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+.grid th { font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); font-weight: 600; }
+.grid td.num, .grid th.num { text-align: right; font-variant-numeric: tabular-nums; }
+.grid select, .grid input[type=text] { width: 100%; padding: 5px 8px; border: 1px solid var(--line-strong);
+  border-radius: 6px; background: var(--panel); }
+.grid input.rate { width: 120px; text-align: right; font-variant-numeric: tabular-nums; }
+input.suggested { background: var(--warn-soft) !important; border-color: var(--warn) !important; }
+input.invalid { background: var(--err-soft) !important; border-color: var(--err) !important; }
+select.missing { border-color: var(--err) !important; background: var(--err-soft) !important; }
+
+/* ---- pastilles ---- */
+.pill { display: inline-flex; align-items: center; gap: 5px; padding: 2px 9px; border-radius: 999px;
+  font-size: 12px; font-weight: 600; white-space: nowrap; }
+.pill.ok { background: var(--ok-soft); color: var(--ok); }
+.pill.warn { background: var(--warn-soft); color: var(--warn); }
+.pill.err { background: var(--err-soft); color: var(--err); }
+.pill.info { background: var(--section); color: var(--muted); }
+.msg { font-size: 12px; margin-top: 4px; }
+.msg.err { color: var(--err); } .msg.warn { color: var(--warn); }
+
+/* ---- boutons ---- */
+.btn { display: inline-flex; align-items: center; gap: 8px; padding: 8px 16px; border-radius: 6px;
+  border: 1px solid var(--line-strong); background: var(--panel); cursor: pointer; text-decoration: none; color: var(--ink); }
+.btn:hover { border-color: var(--accent); }
+.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 600; }
+.btn.primary:hover { filter: brightness(1.08); }
+.btn:disabled { opacity: .5; cursor: not-allowed; filter: none; }
+.btn.link { border: 0; background: none; padding: 4px; color: var(--accent); }
+.actions { display: flex; gap: 10px; justify-content: flex-end; align-items: center; margin-top: 16px; flex-wrap: wrap; }
+.actions .hint { margin-right: auto; color: var(--muted); font-size: 13px; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* ---- formulaire d'options ---- */
+.fields { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 14px; }
+.field label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 4px; font-weight: 600; }
+.field select, .field input { width: 100%; padding: 6px 8px; border: 1px solid var(--line-strong);
+  border-radius: 6px; background: var(--panel); }
+.check { display: flex; align-items: center; gap: 8px; margin: 6px 0; }
+.preview { display: flex; gap: 18px; flex-wrap: wrap; margin-top: 14px; padding: 10px 14px;
+  background: var(--section); border-radius: 6px; font-variant-numeric: tabular-nums; }
+.preview span { color: var(--muted); font-size: 12px; display: block; }
+
+/* ---- resultats ---- */
+.status { display: flex; align-items: center; gap: 14px; padding: 14px 18px; border-radius: var(--radius);
+  margin-bottom: 16px; border: 1px solid transparent; }
+.status .icon { display: grid; place-items: center; width: 30px; height: 30px; border-radius: 50%;
+  font-weight: 700; flex: none; color: #fff; }
+.status.ok { background: var(--ok-soft); border-color: var(--ok); } .status.ok .icon { background: var(--ok); }
+.status.warning { background: var(--warn-soft); border-color: var(--warn); } .status.warning .icon { background: var(--warn); }
+.status.error { background: var(--err-soft); border-color: var(--err); } .status.error .icon { background: var(--err); }
+.status .text { flex: 1; }
+.status .text strong { display: block; font-size: 15px; }
+.status .text span { color: var(--muted); font-size: 13px; }
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; margin-bottom: 16px; }
+.kpi { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 12px 14px; box-shadow: var(--shadow); }
+.kpi span { display: block; font-size: 12px; color: var(--muted); }
+.kpi strong { display: block; font-size: 19px; font-variant-numeric: tabular-nums; margin-top: 2px; }
+.tabs { display: flex; gap: 2px; border-bottom: 1px solid var(--line); margin-bottom: 0; overflow-x: auto; }
+.tab { border: 0; background: none; padding: 10px 14px; color: var(--muted); cursor: pointer; white-space: nowrap;
+  border-bottom: 2px solid transparent; margin-bottom: -1px; }
+.tab[aria-selected="true"] { color: var(--accent); border-bottom-color: var(--accent); font-weight: 600; }
+.tab .badge { display: inline-block; min-width: 18px; padding: 0 5px; margin-left: 6px; border-radius: 9px;
+  font-size: 11px; line-height: 18px; text-align: center; background: var(--section); color: var(--muted); }
+.tab .badge.err { background: var(--err); color: #fff; } .tab .badge.warn { background: var(--warn); color: #fff; }
+.tabpanel { background: var(--panel); border: 1px solid var(--line); border-top: 0; border-radius: 0 0 var(--radius) var(--radius);
+  padding: 16px; box-shadow: var(--shadow); }
+.toolbar { display: flex; gap: 10px; align-items: center; margin-bottom: 12px; flex-wrap: wrap; }
+.toolbar .note { color: var(--muted); font-size: 12px; margin-left: auto; }
+.seg { display: inline-flex; border: 1px solid var(--line-strong); border-radius: 6px; overflow: hidden; }
+.seg button { border: 0; background: var(--panel); padding: 5px 12px; cursor: pointer; }
+.seg button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); }
+
+/* ---- etats financiers ---- */
+.table-wrap { overflow: auto; max-height: calc(100vh - 330px); border: 1px solid var(--line); border-radius: 6px; }
+table.fin { font-variant-numeric: tabular-nums; }
+table.fin th, table.fin td { padding: 5px 12px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+table.fin thead th { position: sticky; top: 0; z-index: 2; background: var(--panel); text-align: right;
+  font-size: 12px; color: var(--muted); border-bottom: 1px solid var(--line-strong); vertical-align: bottom; white-space: normal; min-width: 104px; }
+table.fin thead th.cap { text-align: left; }
+table.fin td.cap, table.fin th.cap { position: sticky; left: 0; background: var(--panel); z-index: 1; text-align: left; min-width: 280px; }
+table.fin thead th.cap { z-index: 3; }
+table.fin td.v { text-align: right; }
+table.fin td.p, table.fin th.p { text-align: right; color: var(--muted); font-size: 12px; min-width: 56px; }
+table.fin td.neg { color: var(--neg); }
+table.fin tr.section td { background: var(--section); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
+table.fin tr.section td.cap { background: var(--section); }
+table.fin tr.line td.cap { padding-left: 26px; }
+table.fin tr.total td, table.fin tr.cascade_total td { font-weight: 650; border-top: 1px solid var(--line-strong); }
+table.fin tr.grand_total td { font-weight: 700; border-top: 3px double var(--line-strong); background: var(--accent-soft); }
+table.fin tr.grand_total td.cap { background: var(--accent-soft); }
+table.fin tr.percent td { font-style: italic; color: var(--muted); }
+table.fin tr.trace td.v { cursor: pointer; }
+table.fin tr.trace td.v:hover { background: var(--accent-soft); outline: 1px solid var(--accent); }
+table.fin tr.trace td.cap { cursor: default; }
+table.fin td.col-total, table.fin th.col-total { font-weight: 600; background: var(--section); }
+
+/* ---- tiroir de tracabilite ---- */
+.drawer { position: fixed; top: 0; right: 0; bottom: 0; width: min(920px, 96vw); background: var(--panel);
+  border-left: 1px solid var(--line); box-shadow: -8px 0 24px rgba(0,0,0,.15); z-index: 40;
+  transform: translateX(105%); transition: transform .2s ease; display: flex; flex-direction: column; }
+.drawer.open { transform: none; }
+.drawer header { padding: 16px 20px; border-bottom: 1px solid var(--line); display: flex; gap: 12px; align-items: flex-start; }
+.drawer header div { flex: 1; }
+.drawer header small { color: var(--muted); display: block; }
+.drawer .body { padding: 16px 20px; overflow: auto; }
+.drawer .total { display: flex; justify-content: space-between; font-weight: 700; padding: 10px; background: var(--section); border-radius: 6px; margin-top: 10px; }
+.scrim { position: fixed; inset: 0; background: rgba(0,0,0,.25); z-index: 30; }
+
+.toast { position: fixed; bottom: 20px; right: 20px; background: var(--ink); color: var(--bg);
+  padding: 10px 18px; border-radius: 6px; z-index: 50; max-width: 80vw; box-shadow: var(--shadow); }
+.toast.err { background: var(--err); color: #fff; }
+.spinner { width: 16px; height: 16px; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%;
+  animation: spin .7s linear infinite; display: inline-block; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.empty { color: var(--muted); padding: 24px; text-align: center; }
+.small { font-size: 12px; color: var(--muted); }
+.list { margin: 0; padding: 0; list-style: none; }
+.list li { display: flex; gap: 12px; align-items: flex-start; padding: 9px 0; border-bottom: 1px solid var(--line); }
+.list li .code { font-family: ui-monospace, Consolas, monospace; font-size: 12px; color: var(--muted); min-width: 36px; }
+.list li .what { flex: 1; } .list li .what small { display: block; color: var(--muted); }
+.sugg { display: flex; gap: 6px; flex-wrap: wrap; }
+.sugg span { padding: 1px 8px; border-radius: 999px; background: var(--section); font-size: 12px; }
+.sugg span:first-child { background: var(--warn-soft); color: var(--warn); font-weight: 600; }
+@media (max-width: 760px) {
+  main { padding: 12px; } .topbar { flex-wrap: wrap; padding: 10px 12px; gap: 8px; }
+  .steps { order: 3; width: 100%; justify-content: space-between; } .step .lbl { display: none; }
+}
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="brand">Mage SAS · Consolidation <small id="version"></small></div>
+  <nav class="steps" aria-label="Etapes">
+    <button class="step" data-step="files" aria-current="step"><span class="n">1</span><span class="lbl">Fichiers</span></button>
+    <button class="step" data-step="options" disabled><span class="n">2</span><span class="lbl">Taux et options</span></button>
+    <button class="step" data-step="results" disabled><span class="n">3</span><span class="lbl">Résultats</span></button>
+  </nav>
+  <div class="period" id="periodBadge"></div>
+</header>
+
+<main>
+<!-- ======================= 1. FICHIERS ======================= -->
+<section id="step-files">
+  <h1>Fichiers de la clôture</h1>
+  <p class="lead">Déposez les <em>management accounts</em> de chaque entité. Ils sont lus sur ce poste&nbsp;; rien n'est envoyé ailleurs.</p>
+
+  <div class="panel">
+    <div class="drop" id="dropSources" role="button" tabindex="0" aria-label="Ajouter des management accounts">
+      <strong>Déposez ici les management accounts</strong>
+      ou cliquez pour parcourir — classeurs .xlsx ou .xlsm, plusieurs à la fois
+    </div>
+    <input type="file" id="inputSources" accept=".xlsx,.xlsm" multiple hidden>
+    <div id="filesTable"></div>
+  </div>
+
+  <div class="panel">
+    <h2>Classeur de référence <span class="small">— facultatif</span></h2>
+    <p class="small" style="margin-top:-6px">Un classeur consolidé déjà produit (format « EC+ », feuilles <em>Detailed Consolidated BS / PL</em>). Les états calculés y seront rapprochés ligne à ligne — indispensable pour la première mise en service.</p>
+    <div id="refZone"></div>
+  </div>
+
+  <div class="actions">
+    <span class="hint" id="filesHint"></span>
+    <button class="btn primary" id="toOptions" disabled>Continuer →</button>
+  </div>
+</section>
+
+<!-- ======================= 2. TAUX ET OPTIONS ======================= -->
+<section id="step-options" hidden>
+  <h1>Taux de change et options</h1>
+  <p class="lead">Taux en cotation indirecte, comme dans les classeurs Mage&nbsp;: <strong>1 EUR = X devise</strong>. Bilan au taux de clôture, résultat au taux moyen, capital au taux historique.</p>
+
+  <div class="panel">
+    <div class="row" style="align-items:flex-end;margin-bottom:14px">
+      <div class="field" style="width:200px"><label for="closing">Date de clôture</label><input type="date" id="closing"></div>
+      <a class="btn" id="ratesTemplate" href="#" style="margin-left:auto">⤓ Modèle de taux (Excel)</a>
+    </div>
+    <div id="ratesTable"></div>
+    <div id="ratesChecks"></div>
+  </div>
+
+  <div class="row">
+    <div class="panel grow">
+      <h2>États à produire</h2>
+      <label class="check"><input type="checkbox" id="optEntity" checked> Colonnes par entité, éliminations et total</label>
+      <label class="check"><input type="checkbox" id="optCC"> États par centre de coûts</label>
+      <label class="check"><input type="checkbox" id="optMargins" checked> Analyse de marge par famille de produits</label>
+      <div class="fields" style="margin-top:12px">
+        <div class="field"><label for="optLevel">Vues par entité / centre</label>
+          <select id="optLevel"><option value="summary">Synthèse</option><option value="detail">Détail</option></select></div>
+        <div class="field"><label for="optTol">Tolérance de rapprochement (€)</label><input id="optTol" type="text" inputmode="decimal" value="1"></div>
+      </div>
+    </div>
+    <div class="panel grow">
+      <h2>Présentation des montants</h2>
+      <div class="fields">
+        <div class="field"><label for="pScale">Unité</label>
+          <select id="pScale"><option value="units">Unités</option><option value="thousands">Milliers</option><option value="millions">Millions</option></select></div>
+        <div class="field"><label for="pDec">Décimales</label>
+          <select id="pDec"><option>0</option><option>1</option><option>2</option></select></div>
+        <div class="field"><label for="pNeg">Négatifs</label>
+          <select id="pNeg"><option value="parentheses">(1 234)</option><option value="minus">-1 234</option></select></div>
+        <div class="field"><label for="pZero">Zéros</label>
+          <select id="pZero"><option value="-">Tiret</option><option value="blank">Vide</option><option value="zero">0</option></select></div>
+        <div class="field"><label for="pCur">Symbole €</label>
+          <select id="pCur"><option value="suffix">Après</option><option value="prefix">Avant</option><option value="none">Aucun</option></select></div>
+      </div>
+      <label class="check"><input type="checkbox" id="pPct" checked> % du chiffre d'affaires au compte de résultat</label>
+      <div class="preview" id="preview"></div>
+      <p class="small">La présentation ne modifie jamais les montants calculés&nbsp;: le classeur Excel contient les valeurs exactes.</p>
+    </div>
+  </div>
+
+  <div class="actions">
+    <button class="btn" data-go="files">← Fichiers</button>
+    <span class="hint" id="optionsHint"></span>
+    <button class="btn primary" id="runBtn">Consolider</button>
+  </div>
+</section>
+
+<!-- ======================= 3. RESULTATS ======================= -->
+<section id="step-results" hidden>
+  <div id="status"></div>
+  <div class="kpis" id="kpis"></div>
+  <div class="tabs" role="tablist" id="tabs"></div>
+  <div class="tabpanel" id="tabpanel"></div>
+</section>
+</main>
+
+<div class="scrim" id="scrim" hidden></div>
+<aside class="drawer" id="drawer" aria-hidden="true" aria-labelledby="drawerTitle">
+  <header>
+    <div><strong id="drawerTitle"></strong><small id="drawerSub"></small></div>
+    <button class="btn" id="drawerClose" aria-label="Fermer">✕</button>
+  </header>
+  <div class="body" id="drawerBody"></div>
+</aside>
+<div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
+<script>
+"use strict";
+const S = { session: null, meta: null, insp: null, entities: {}, rates: {}, result: null,
+            tab: "bs", view: {}, diagFilter: "all", hideZero: true };
+const $ = (sel, root = document) => root.querySelector(sel);
+const esc = (v) => String(v ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+
+// ------------------------------------------------------------------ API
+async function api(path, body) {
+  const res = await fetch(path, { method: "POST", headers: { "Content-Type": "application/json" },
+                                  body: JSON.stringify(body || {}) });
+  const data = await res.json().catch(() => ({ error: "Reponse illisible du serveur." }));
+  if (!res.ok) throw new Error(data.error || res.statusText);
+  return data;
+}
+let toastTimer;
+function toast(text, isErr) {
+  const t = $("#toast"); t.textContent = text; t.className = "toast" + (isErr ? " err" : "");
+  t.hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(() => t.hidden = true, isErr ? 7000 : 3500);
+}
+function busy(btn, on, label) {
+  if (on) { btn.dataset.label = btn.innerHTML; btn.innerHTML = `<span class="spinner"></span> ${label || ""}`; btn.disabled = true; }
+  else { btn.innerHTML = btn.dataset.label || btn.innerHTML; btn.disabled = false; }
+}
+
+// ------------------------------------------------------------ navigation
+function go(step) {
+  for (const id of ["files", "options", "results"]) $("#step-" + id).hidden = id !== step;
+  document.querySelectorAll(".step").forEach(b => {
+    b.setAttribute("aria-current", b.dataset.step === step ? "step" : "false");
+  });
+  window.scrollTo({ top: 0 });
+}
+document.querySelectorAll(".step").forEach(b => b.addEventListener("click", () => !b.disabled && go(b.dataset.step)));
+document.querySelectorAll("[data-go]").forEach(b => b.addEventListener("click", () => go(b.dataset.go)));
+function unlock(step, done) {
+  const b = $(`.step[data-step="${step}"]`); b.disabled = false;
+  if (done) b.classList.add("done");
+}
+
+// --------------------------------------------------------------- fichiers
+function readFile(file) {
+  return new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => resolve({ name: file.name, data: r.result });
+    r.onerror = () => reject(new Error("Lecture impossible : " + file.name));
+    r.readAsDataURL(file);
+  });
+}
+async function upload(files, kind) {
+  files = [...files].filter(f => /\.(xlsx|xlsm)$/i.test(f.name));
+  if (!files.length) return toast("Seuls les classeurs .xlsx ou .xlsm sont acceptés.", true);
+  const zone = kind === "reference" ? $("#refZone") : $("#dropSources");
+  zone.style.opacity = .6;
+  try {
+    const payload = await Promise.all(files.map(readFile));
+    S.insp = await api("/api/files", { session: S.session, files: payload, kind, entities: S.entities });
+    S.session = S.insp.session;
+    toast(`${files.length} fichier(s) chargé(s)`);
+    renderFiles();
+  } catch (e) { toast(e.message, true); }
+  finally { zone.style.opacity = 1; }
+}
+function wireDrop(zone, input, kind) {
+  zone.addEventListener("click", () => input.click());
+  zone.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); input.click(); } });
+  input.addEventListener("change", () => { upload(input.files, kind); input.value = ""; });
+  zone.addEventListener("dragover", (e) => { e.preventDefault(); zone.classList.add("over"); });
+  zone.addEventListener("dragleave", () => zone.classList.remove("over"));
+  zone.addEventListener("drop", (e) => { e.preventDefault(); zone.classList.remove("over"); upload(e.dataTransfer.files, kind); });
+}
+
+function entityName(code) { const e = S.meta.entities.find(x => x.code === code); return e ? e.name : code; }
+function entityOptions(selected) {
+  const ents = [...S.meta.entities].sort((a, b) => (b.in_scope - a.in_scope) || a.name.localeCompare(b.name));
+  return `<option value="">— choisir l'entité —</option>` + ents.map(e =>
+    `<option value="${esc(e.code)}" ${e.code === selected ? "selected" : ""}>${esc(e.name)} (${esc(e.currency)})${e.in_scope ? "" : " — hors périmètre"}</option>`).join("");
+}
+
+function renderFiles() {
+  const insp = S.insp;
+  const srcs = insp ? insp.sources : [];
+  if (!srcs.length) {
+    $("#filesTable").innerHTML = `<p class="empty">Aucun fichier pour l'instant.</p>`;
+  } else {
+    $("#filesTable").innerHTML = `<table class="grid" style="margin-top:16px"><thead><tr>
+      <th>Fichier</th><th style="width:260px">Entité</th><th>Devise</th><th>Période</th><th class="num">Lignes</th><th>Balance</th><th></th></tr></thead><tbody>
+      ${srcs.map(s => {
+        const msgs = (s.messages || []).filter(m => m.severity !== "INFO");
+        const bal = s.balanced ? `<span class="pill ok">✓ équilibrée</span>`
+                               : `<span class="pill err">✕ écart ${esc(s.imbalance)}</span>`;
+        const dup = s.duplicate ? `<div class="msg err">Entité présente dans plusieurs fichiers : un seul sera retenu.</div>` : "";
+        const unk = !s.entity ? `<div class="msg err">Entité non reconnue (lu : « ${esc(s.entity_read || "?")} »). Choisissez-la.</div>` : "";
+        const hid = s.hidden_sheets.length ? `<div class="small">Feuilles masquées lues : ${esc(s.hidden_sheets.join(", "))}</div>` : "";
+        return `<tr>
+          <td><strong>${esc(s.name)}</strong>${hid}${msgs.map(m => `<div class="msg ${m.severity === "ERROR" ? "err" : "warn"}">${esc(m.message)}</div>`).join("")}</td>
+          <td><select data-file="${esc(s.name)}" class="${s.entity ? "" : "missing"}">${entityOptions(s.entity)}</select>${unk}${dup}</td>
+          <td>${esc(s.currency || "?")}</td>
+          <td class="small">${esc(s.period_start || "?")} → ${esc(s.period_end || "?")}</td>
+          <td class="num">${s.lines}</td><td>${bal}</td>
+          <td><button class="btn link" data-remove="${esc(s.name)}" title="Retirer">✕</button></td></tr>`;
+      }).join("")}</tbody></table>`;
+  }
+  $("#filesTable").querySelectorAll("select[data-file]").forEach(sel => sel.addEventListener("change", async () => {
+    S.entities[sel.dataset.file] = sel.value;
+    S.insp = await api("/api/inspect", { session: S.session, entities: S.entities }).catch(e => (toast(e.message, true), S.insp));
+    renderFiles();
+  }));
+  $("#filesTable").querySelectorAll("[data-remove]").forEach(b => b.addEventListener("click", async () => {
+    S.insp = await api("/api/files/remove", { session: S.session, name: b.dataset.remove, entities: S.entities });
+    renderFiles();
+  }));
+
+  // reference
+  if (insp && insp.reference) {
+    $("#refZone").innerHTML = `<div class="row" style="align-items:center"><span class="pill info">Référence</span>
+      <strong>${esc(insp.reference)}</strong><button class="btn link" id="refRemove">Retirer</button></div>`;
+    $("#refRemove").addEventListener("click", async () => {
+      S.insp = await api("/api/files/remove", { session: S.session, kind: "reference", entities: S.entities }); renderFiles();
+    });
+  } else {
+    $("#refZone").innerHTML = `<div class="drop small" id="dropRef" role="button" tabindex="0"><strong>Déposez le classeur de référence</strong>ou cliquez pour parcourir</div>
+      <input type="file" id="inputRef" accept=".xlsx,.xlsm" hidden>`;
+    wireDrop($("#dropRef"), $("#inputRef"), "reference");
+  }
+
+  // validation de l'etape
+  const problems = [];
+  if (!srcs.length) problems.push("déposez au moins un fichier");
+  if (srcs.some(s => !s.entity)) problems.push("choisissez l'entité des fichiers non reconnus");
+  if (insp && insp.duplicates.length) problems.push("une même entité figure dans plusieurs fichiers");
+  $("#filesHint").textContent = problems.length ? "Pour continuer : " + problems.join(", ") + "." :
+    `${srcs.length} fichier(s) prêt(s), clôture au ${insp.closing || "?"}.`;
+  $("#toOptions").disabled = problems.length > 0;
+  if (!problems.length) unlock("options");
+  $("#periodBadge").textContent = insp && insp.closing ? "Clôture au " + insp.closing : "";
+}
+
+// ---------------------------------------------------------------- taux
+function renderRates() {
+  const insp = S.insp;
+  $("#closing").value = insp.closing || "";
+  $("#ratesTemplate").href = `/api/download?session=${S.session}&what=rates&closing=${encodeURIComponent(insp.closing || "")}`;
+  if (!insp.rates.length) {
+    $("#ratesTable").innerHTML = `<p class="empty">Toutes les entités sont en euros : aucun taux à saisir.</p>`;
+    return;
+  }
+  const label = { eom: "Clôture", average: "Moyen", historical: "Historique" };
+  $("#ratesTable").innerHTML = `<table class="grid"><thead><tr><th>Devise</th><th>Entités</th>
+    ${["eom", "average", "historical"].map(k => `<th class="num">${label[k]}</th>`).join("")}<th>État</th></tr></thead><tbody>
+    ${insp.rates.map(r => {
+      S.rates[r.currency] = S.rates[r.currency] || {};
+      const cells = ["eom", "average", "historical"].map(k => {
+        const typed = S.rates[r.currency][k];
+        const known = r.known[k], sugg = r.suggested[k];
+        const val = typed ?? known ?? sugg ?? "";
+        const cls = (typed == null && known == null && sugg != null) ? "suggested" : "";
+        return `<td class="num"><input class="rate ${cls}" type="text" inputmode="decimal" data-cur="${esc(r.currency)}" data-kind="${k}"
+                 value="${esc(String(val).replace(".", ","))}" aria-label="${label[k]} ${esc(r.currency)}"></td>`;
+      }).join("");
+      return `<tr><td><strong>${esc(r.currency)}</strong></td><td class="small">${esc(r.entities.map(entityName).join(", "))}</td>${cells}
+        <td data-state="${esc(r.currency)}"></td></tr>`;
+    }).join("")}</tbody></table>
+    <p class="small">Surligné : pré-rempli avec le <strong>dernier taux connu</strong> — à remplacer par le taux de la clôture.</p>`;
+  $("#ratesTable").querySelectorAll("input.rate").forEach(inp => inp.addEventListener("input", () => {
+    S.rates[inp.dataset.cur][inp.dataset.kind] = inp.value.trim() === "" ? null : inp.value.trim();
+    inp.classList.remove("suggested");
+    scheduleRateCheck();
+  }));
+  scheduleRateCheck();
+}
+function currentRates() {
+  const out = {};
+  document.querySelectorAll("input.rate").forEach(inp => {
+    (out[inp.dataset.cur] = out[inp.dataset.cur] || {})[inp.dataset.kind] = inp.value.trim().replace(",", ".");
+  });
+  return out;
+}
+let rateTimer;
+function scheduleRateCheck() { clearTimeout(rateTimer); rateTimer = setTimeout(checkRates, 250); }
+async function checkRates() {
+  const rates = currentRates();
+  let checks = [];
+  try { checks = (await api("/api/rates/check", { session: S.session, closing: $("#closing").value, rates })).checks; }
+  catch (e) { return; }
+  document.querySelectorAll("input.rate").forEach(i => i.classList.remove("invalid"));
+  const missing = [];
+  for (const [cur, kinds] of Object.entries(rates)) {
+    const miss = ["eom", "average"].filter(k => !kinds[k]);
+    if (miss.length) missing.push(cur);
+    const mine = checks.filter(c => c.currency === cur);
+    const cell = document.querySelector(`[data-state="${CSS.escape(cur)}"]`);
+    if (cell) cell.innerHTML = miss.length ? `<span class="pill err">à saisir</span>` :
+      mine.some(c => c.severity === "ERROR") ? `<span class="pill err">à corriger</span>` :
+      mine.length ? `<span class="pill warn">à vérifier</span>` : `<span class="pill ok">✓</span>`;
+    for (const c of mine) {
+      const inp = document.querySelector(`input.rate[data-cur="${CSS.escape(cur)}"][data-kind="${c.kind}"]`);
+      if (inp && c.severity === "ERROR") inp.classList.add("invalid");
+    }
+  }
+  $("#ratesChecks").innerHTML = checks.map(c => `<div class="msg ${c.severity === "ERROR" ? "err" : "warn"}">${esc(c.message)}</div>`).join("");
+  const blocking = checks.some(c => c.severity === "ERROR");
+  $("#optionsHint").textContent = missing.length ? `Taux manquant : ${missing.join(", ")}.` :
+    blocking ? "Un taux semble erroné : corrigez-le avant de consolider." : "";
+  $("#runBtn").disabled = missing.length > 0 || blocking;
+}
+$("#closing").addEventListener("change", async () => {
+  S.insp = await api("/api/inspect", { session: S.session, entities: S.entities, closing: $("#closing").value });
+  S.insp.closing = $("#closing").value; S.rates = {}; renderRates();
+});
+
+// ----------------------------------------------------------- presentation
+function presentation() {
+  return { scale: $("#pScale").value, decimals: $("#pDec").value, negative_format: $("#pNeg").value,
+           zero_display: $("#pZero").value, currency_position: $("#pCur").value, percent_of_revenue: $("#pPct").checked };
+}
+async function preview() {
+  try {
+    const p = await api("/api/format", { presentation: presentation() });
+    $("#preview").innerHTML = p.examples.map(e => `<div><span>${esc(e.raw)}</span>${esc(e.text) || "&nbsp;"}</div>`).join("")
+      + `<div><span>marge 0,5212</span>${esc(p.percent)}</div>`;
+  } catch (e) { /* aperçu facultatif */ }
+}
+["pScale", "pDec", "pNeg", "pZero", "pCur", "pPct"].forEach(id => $("#" + id).addEventListener("change", preview));
+
+$("#toOptions").addEventListener("click", () => { unlock("files", true); renderRates(); preview(); go("options"); });
+
+// ---------------------------------------------------------- consolidation
+$("#runBtn").addEventListener("click", async () => {
+  const btn = $("#runBtn"); busy(btn, true, "Consolidation…");
+  try {
+    S.result = await api("/api/consolidate", {
+      session: S.session, closing: $("#closing").value, entities: S.entities, rates: currentRates(),
+      presentation: presentation(),
+      options: { by_entity: $("#optEntity").checked, by_cost_centre: $("#optCC").checked, margins: $("#optMargins").checked,
+                 level: $("#optLevel").value, tolerance: $("#optTol").value.replace(",", ".") },
+    });
+    unlock("options", true); unlock("results", true);
+    S.seenErr = false;  // a chaque consolidation en echec, ouvrir les controles
+    renderResults(); go("results");
+  } catch (e) { toast(e.message, true); }
+  finally { busy(btn, false); }
+});
+
+// --------------------------------------------------------------- resultats
+const GROUPS = [
+  { id: "bs", label: "Bilan", views: [["Consolidated BS", "Synthèse"], ["Detailed BS", "Détail"]] },
+  { id: "pl", label: "Compte de résultat", views: [["Consolidated PL", "Synthèse"], ["Detailed PL", "Détail"]] },
+  { id: "ent", label: "Par entité", views: [["BS by entity", "Bilan"], ["PL by entity", "Résultat"]] },
+  { id: "cc", label: "Par centre de coûts", views: [["BS by cost center", "Bilan"], ["PL by cost center", "Résultat"]] },
+  { id: "margin", label: "Marges", views: [["Gross margin", ""]] },
+];
+function report(key) { return S.result.reports.find(r => r.key === key); }
+
+function renderResults() {
+  const r = S.result;
+  const icon = { ok: "✓", warning: "!", error: "✕" }[r.status.level];
+  const sub = r.status.level === "error" ? "Consultez l'onglet Contrôles avant toute diffusion." :
+              r.status.level === "warning" ? "Les contrôles bloquants sont satisfaits ; des avertissements restent à examiner." :
+              "Bilan équilibré, résultat cohérent avec le bilan, mappings complets.";
+  $("#status").innerHTML = `<div class="status ${r.status.level}" role="alert">
+    <div class="icon">${icon}</div>
+    <div class="text"><strong>${esc(r.status.headline)}</strong><span>${sub} — clôture au ${esc(r.period_end)}</span></div>
+    <button class="btn" data-go="options">Modifier taux / options</button>
+    <a class="btn primary" href="${esc(r.download)}" download="${esc(r.download_name)}">⤓ Télécharger le classeur Excel</a></div>`;
+  $("#status").querySelector("[data-go]").addEventListener("click", () => go("options"));
+  $("#periodBadge").textContent = "Clôture au " + r.period_end;
+  $("#kpis").innerHTML = r.kpis.map(k => `<div class="kpi"><span>${esc(k.label)}</span><strong>${esc(k.text)}</strong></div>`).join("");
+
+  const failed = r.controls.filter(c => !c.passed);
+  const errs = r.diagnostics.filter(d => d.severity === "ERROR").length;
+  const warns = r.diagnostics.filter(d => d.severity === "WARNING").length;
+  const tabs = GROUPS.filter(g => g.views.some(([k]) => report(k)))
+    .map(g => ({ id: g.id, label: g.label }));
+  tabs.push({ id: "controls", label: "Contrôles", badge: failed.length,
+              badgeCls: failed.some(c => c.severity === "ERROR") ? "err" : "warn" });
+  tabs.push({ id: "diag", label: "Diagnostics", badge: errs + warns, badgeCls: errs ? "err" : "warn" });
+  if (r.unmapped.length) tabs.push({ id: "mapping", label: "Mapping à compléter", badge: r.unmapped.length, badgeCls: "err" });
+  if (r.reconciliation) {
+    const gaps = r.reconciliation.counts["ECART"] || 0;
+    tabs.push({ id: "rec", label: "Rapprochement", badge: gaps, badgeCls: gaps ? "err" : "" });
+  }
+  tabs.push({ id: "sources", label: "Sources et taux" });
+  if (!tabs.some(t => t.id === S.tab)) S.tab = "bs";
+  if (r.status.level === "error" && !S.seenErr) { S.tab = "controls"; S.seenErr = true; }
+
+  $("#tabs").innerHTML = tabs.map(t => `<button class="tab" role="tab" data-tab="${t.id}" aria-selected="${t.id === S.tab}">${esc(t.label)}${
+    t.badge ? `<span class="badge ${t.badgeCls || ""}">${t.badge}</span>` : ""}</button>`).join("");
+  $("#tabs").querySelectorAll(".tab").forEach(b => b.addEventListener("click", () => { S.tab = b.dataset.tab; renderResults(); }));
+  renderTab();
+}
+
+function renderTab() {
+  const r = S.result, panel = $("#tabpanel");
+  const group = GROUPS.find(g => g.id === S.tab);
+  if (group) {
+    const views = group.views.filter(([k]) => report(k));
+    const key = S.view[group.id] && report(S.view[group.id]) ? S.view[group.id] : views[0][0];
+    const rep = report(key);
+    const seg = views.length > 1 ? `<div class="seg" role="group">${views.map(([k, l]) =>
+      `<button data-view="${esc(k)}" aria-pressed="${k === key}">${esc(l)}</button>`).join("")}</div>` : "";
+    const zeroToggle = rep.rows.length > 30 ? `<label class="check" style="margin:0"><input type="checkbox" id="hideZero" ${S.hideZero ? "checked" : ""}> Masquer les lignes à zéro</label>` : "";
+    panel.innerHTML = `<div class="toolbar">${seg}<strong>${esc(rep.title)}</strong>${zeroToggle}
+      <span class="note">${esc(rep.note)} · cliquez un montant pour voir ses lignes sources</span></div>
+      <div class="table-wrap">${finTable(rep)}</div>`;
+    panel.querySelectorAll("[data-view]").forEach(b => b.addEventListener("click", () => { S.view[group.id] = b.dataset.view; renderTab(); }));
+    const hz = $("#hideZero"); if (hz) hz.addEventListener("change", () => { S.hideZero = hz.checked; renderTab(); });
+    panel.querySelectorAll("td[data-row]").forEach(td => td.addEventListener("click", () => openTrace(rep, +td.dataset.row, td.dataset.col)));
+    return;
+  }
+  if (S.tab === "controls") {
+    panel.innerHTML = `<ul class="list">${r.controls.map(c => `<li>
+      <span class="code">${esc(c.code)}</span>
+      <div class="what"><strong>${esc(c.label)}</strong><small>${esc(c.detail)}</small></div>
+      ${c.passed ? `<span class="pill ok">✓ OK</span>` : c.severity === "ERROR" ? `<span class="pill err">✕ Bloquant</span>` : `<span class="pill warn">! À voir</span>`}
+      </li>`).join("")}</ul>`;
+    return;
+  }
+  if (S.tab === "diag") {
+    const f = S.diagFilter;
+    const rows = r.diagnostics.filter(d => f === "all" || d.severity === f);
+    panel.innerHTML = `<div class="toolbar"><div class="seg">${[["all", "Tous"], ["ERROR", "Erreurs"], ["WARNING", "Avertissements"]].map(([k, l]) =>
+      `<button data-f="${k}" aria-pressed="${k === f}">${l}</button>`).join("")}</div></div>
+      ${rows.length ? `<table class="grid"><thead><tr><th>Gravité</th><th>Code</th><th>Entité</th><th>Message</th></tr></thead><tbody>
+      ${rows.map(d => `<tr><td>${d.severity === "ERROR" ? `<span class="pill err">Erreur</span>` : d.severity === "WARNING" ? `<span class="pill warn">Avert.</span>` : `<span class="pill info">Info</span>`}</td>
+        <td class="small">${esc(d.code)}</td><td class="small">${esc(d.entity || "")}</td><td>${esc(d.message)}</td></tr>`).join("")}</tbody></table>`
+      : `<p class="empty">Aucun diagnostic.</p>`}`;
+    panel.querySelectorAll("[data-f]").forEach(b => b.addEventListener("click", () => { S.diagFilter = b.dataset.f; renderTab(); }));
+    return;
+  }
+  if (S.tab === "mapping") {
+    panel.innerHTML = `<div class="status error" style="margin-bottom:12px"><div class="icon">!</div><div class="text">
+      <strong>${r.unmapped.length} compte(s) exclu(s) du consolidé faute de correspondance</strong>
+      <span>Reportez la correspondance dans la feuille « Mapping accounts » du fichier source ou dans config/mapping, puis relancez.</span></div>
+      <a class="btn" href="/api/download?session=${S.session}&what=mapping">⤓ CSV pré-rempli</a></div>
+      <table class="grid"><thead><tr><th>Entité</th><th>Compte local</th><th class="num">Montant</th><th>Suggestions (similarité)</th></tr></thead><tbody>
+      ${r.unmapped.map(u => `<tr><td>${esc(u.entity)}</td><td><strong>${esc(u.local_account)}</strong><div class="small">${esc(u.file)}</div></td>
+        <td class="num">${esc(u.amount)}</td><td><div class="sugg">${u.suggestions.length ? u.suggestions.map(s =>
+          `<span>${esc(s.caption)} · ${s.score}%</span>`).join("") : `<span class="small">aucune suggestion</span>`}</div></td></tr>`).join("")}
+      </tbody></table>`;
+    return;
+  }
+  if (S.tab === "rec") {
+    const rec = r.reconciliation, c = rec.counts;
+    panel.innerHTML = `<div class="toolbar"><strong>Rapprochement avec ${esc(rec.file)}</strong>
+      <span class="pill ok">${c.OK || 0} conformes</span><span class="pill ${c.ECART ? "err" : "info"}">${c.ECART || 0} écarts</span>
+      <span class="pill info">${(c["absent du calcul"] || 0) + (c["absent de la reference"] || 0)} non appariés</span>
+      <span class="note">tolérance ${esc(rec.tolerance)} €</span></div>
+      <div class="table-wrap"><table class="grid"><thead><tr><th>État</th><th>Poste</th><th class="num">Référence</th><th class="num">Calculé</th><th class="num">Écart</th><th>Statut</th></tr></thead><tbody>
+      ${rec.lines.map(l => `<tr><td class="small">${esc(l.statement)}</td><td>${esc(l.caption)}</td><td class="num">${esc(l.reference)}</td>
+        <td class="num">${esc(l.computed)}</td><td class="num">${esc(l.difference)}</td>
+        <td>${l.status === "OK" ? `<span class="pill ok">OK</span>` : l.status === "ECART" ? `<span class="pill err">Écart</span>` : `<span class="pill warn">${l.status === "absent du calcul" ? "Absent du calcul" : "Absent de la référence"}</span>`}</td></tr>`).join("")}
+      </tbody></table></div>`;
+    return;
+  }
+  if (S.tab === "sources") {
+    const kind = { eom: "clôture", average: "moyen", historical: "historique" };
+    panel.innerHTML = `<div class="row"><div class="grow"><h2>Fichiers consolidés</h2><table class="grid"><thead><tr><th>Fichier</th><th>Entité</th><th>Devise</th><th class="num">Lignes</th></tr></thead><tbody>
+      ${r.sources.map(s => `<tr><td>${esc(s.name)}</td><td>${esc(s.entity)}</td><td>${esc(s.currency)}</td><td class="num">${s.lines}</td></tr>`).join("")}</tbody></table></div>
+      <div class="grow"><h2>Taux appliqués <span class="small">(1 EUR = X)</span></h2>${r.rates_used.length ? `<table class="grid"><thead><tr><th>Devise</th><th>Type</th><th class="num">Taux</th></tr></thead><tbody>
+      ${r.rates_used.map(x => `<tr><td>${esc(x.currency)}</td><td>${esc(kind[x.kind] || x.kind)}</td><td class="num">${esc(x.rate)}</td></tr>`).join("")}</tbody></table>` : `<p class="empty">Aucune conversion.</p>`}</div></div>`;
+  }
+}
+
+function isZeroRow(row) {
+  return row.kind === "line" && row.cells.every(c => !c || !c.text || c.text === "-" || c.text === "0");
+}
+function finTable(rep) {
+  const pct = rep.percent;
+  const hide = S.hideZero && rep.rows.length > 30;
+  const head = `<tr><th class="cap">Poste</th>${rep.columns.map(c =>
+    `<th class="${c.key === "TOTAL" && rep.columns.length > 1 ? "col-total" : ""}">${esc(c.label)}</th>${pct ? `<th class="p">%</th>` : ""}`).join("")}</tr>`;
+  const body = rep.rows.map((row, i) => {
+    const trace = row.traceable ? " trace" : "";
+    if (hide && isZeroRow(row)) return "";
+    if (row.kind === "section") return `<tr class="section"><td class="cap" colspan="${1 + rep.columns.length * (pct ? 2 : 1)}">${esc(row.caption)}</td></tr>`;
+    const cells = row.cells.map((c, j) => {
+      const col = rep.columns[j].key;
+      const tot = col === "TOTAL" && rep.columns.length > 1 ? " col-total" : "";
+      const attrs = row.traceable && c && c.text ? ` data-row="${i}" data-col="${esc(col)}" title="Voir les lignes sources"` : "";
+      return `<td class="v${c && c.negative ? " neg" : ""}${tot}"${attrs}>${esc(c ? c.text : "")}</td>${pct ? `<td class="p">${esc(c ? c.pct : "")}</td>` : ""}`;
+    }).join("");
+    return `<tr class="${row.kind}${trace}"><td class="cap">${esc(row.caption)}</td>${cells}</tr>`;
+  }).join("");
+  return `<table class="fin"><thead>${head}</thead><tbody>${body}</tbody></table>`;
+}
+
+// ------------------------------------------------------------ tracabilite
+async function openTrace(rep, rowIdx, col) {
+  const row = rep.rows[rowIdx];
+  const colLabel = (rep.columns.find(c => c.key === col) || {}).label || col;
+  $("#drawerTitle").textContent = row.caption;
+  $("#drawerSub").textContent = `${rep.title} · colonne ${colLabel}` + (row.sources.length > 1 ? ` · regroupe ${row.sources.length} comptes groupe` : "");
+  $("#drawerBody").innerHTML = `<p class="empty"><span class="spinner"></span></p>`;
+  openDrawer(true);
+  try {
+    const t = await api("/api/trace", { session: S.session, report: rep.key, captions: row.sources, column: col });
+    $("#drawerBody").innerHTML = t.rows.length ? `<table class="grid"><thead><tr><th>Entité</th><th>Source</th><th>Compte local → groupe</th>
+      <th class="num">Montant source</th><th class="num">Taux</th><th class="num">EUR</th></tr></thead><tbody>
+      ${t.rows.map(x => `<tr><td class="small">${esc(x.entity)}</td>
+        <td class="small">${x.row ? `${esc(x.file)}<br>${esc(x.sheet)}, ligne ${x.row}` : `<em>${esc(x.transformations)}</em>`}</td>
+        <td>${esc(x.local_account)}${x.local_account !== x.group_coa ? `<div class="small">→ ${esc(x.group_coa)}</div>` : ""}</td>
+        <td class="num">${esc(x.amount_source)}</td><td class="num small">${esc(x.rate)}${x.rate_type ? `<br>${esc(x.rate_type)}` : ""}</td>
+        <td class="num"><strong>${esc(x.amount_eur)}</strong></td></tr>`).join("")}</tbody></table>
+      <div class="total"><span>Total (${t.count} ligne${t.count > 1 ? "s" : ""})</span><span>${esc(t.total)}</span></div>
+      <p class="small">Montants présentés avec le signe de l'état. Le total correspond au montant cliqué.</p>`
+      : `<p class="empty">Aucune ligne source : montant nul ou issu d'un sous-total.</p>`;
+  } catch (e) { $("#drawerBody").innerHTML = `<p class="msg err">${esc(e.message)}</p>`; }
+}
+function openDrawer(on) {
+  $("#drawer").classList.toggle("open", on); $("#drawer").setAttribute("aria-hidden", String(!on));
+  $("#scrim").hidden = !on; if (on) $("#drawerClose").focus();
+}
+$("#drawerClose").addEventListener("click", () => openDrawer(false));
+$("#scrim").addEventListener("click", () => openDrawer(false));
+document.addEventListener("keydown", (e) => { if (e.key === "Escape") openDrawer(false); });
+
+// --------------------------------------------------------------- demarrage
+(async function init() {
+  try {
+    S.meta = await (await fetch("/api/meta")).json();
+    $("#version").textContent = "v" + S.meta.version;
+    const p = S.meta.presentation || {};
+    if (p.scale) $("#pScale").value = p.scale;
+    if (p.decimals != null) $("#pDec").value = String(p.decimals);
+    if (p.negative_format) $("#pNeg").value = p.negative_format;
+    if (p.currency_position) $("#pCur").value = p.currency_position;
+    if (p.zero_display) $("#pZero").value = ["-", "blank", "zero"].includes(p.zero_display) ? p.zero_display : "-";
+    if (p.percent_of_revenue === false) $("#pPct").checked = false;
+  } catch (e) { toast("Serveur injoignable : relancez « mageconso ui ».", true); }
+  wireDrop($("#dropSources"), $("#inputSources"), "source");
+  renderFiles();
+})();
+</script>
+</body>
+</html>

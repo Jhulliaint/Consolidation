@@ -259,5 +259,8 @@ def eur(value: Decimal | None, decimals: int = 2) -> str:
     """
     if value is None:
         return ""
-    txt = f"{Decimal(value):,.{decimals}f}"
+    value = Decimal(value)
+    if abs(value) < Decimal(1).scaleb(-decimals) / 2:
+        value = Decimal(0)  # pas de "-0,00"
+    txt = f"{value:,.{decimals}f}"
     return txt.replace(",", " ").replace(".", ",")

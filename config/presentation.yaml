@@ -31,7 +31,7 @@ null_display: blank          # zero | dash | blank
 
 # --- Nombres negatifs -------------------------------------------------------
 negative_format: parentheses # minus | parentheses
-negative_colour: null        # ex. "FF0000" pour un export Excel en rouge
+negative_colour: null        # renseigne (ex. "FF0000") -> negatifs en rouge dans Excel
 
 # --- Pourcentages -----------------------------------------------------------
 percent:
@@ -39,6 +39,9 @@ percent:
   symbol: "%"
   symbol_space: false
   zero_display: blank        # le classeur de reference masque les 0 %
+
+# --- Compte de resultat -----------------------------------------------------
+percent_of_revenue: true     # colonne "% du chiffre d'affaires" (ecran et Excel)
 
 # --- Ordre et niveau de detail ---------------------------------------------
 detail_level: summary        # summary | detail | both

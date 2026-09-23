@@ -168,6 +168,32 @@ def _load_account_map(path: Path) -> dict[str, str]:
     return out
 
 
+def _statements_from_pcg(path: Path) -> dict[str, Statement]:
+    """Classe bilan / resultat des comptes groupe d'apres le PCG.
+
+    Dans le plan comptable general, la classe d'un compte (1er chiffre) fixe
+    son etat : classes 1 a 5 = bilan, 6 et 7 = compte de resultat. Pour une
+    table de correspondance francaise (MAGE SAS, SICCA), on en deduit l'etat de
+    chaque compte groupe cible - y compris ceux qui ne figurent sur aucune ligne
+    des etats (creances sur filiales, comptes courants). Un compte groupe
+    alimente a la fois par des classes de bilan et de resultat est ambigu : il
+    n'est pas classe ici.
+    """
+    seen: dict[str, set[Statement]] = {}
+    with path.open(encoding="utf-8", newline="") as fh:
+        for row in csv.DictReader(fh):
+            acct = (row.get("local_account") or "").strip()
+            target = norm(row.get("group_coa"))
+            if not target or not acct[:1].isdigit():
+                continue
+            cls = int(acct[0])
+            if 1 <= cls <= 5:
+                seen.setdefault(target, set()).add(Statement.BALANCE_SHEET)
+            elif cls in (6, 7):
+                seen.setdefault(target, set()).add(Statement.PROFIT_AND_LOSS)
+    return {k: next(iter(v)) for k, v in seen.items() if len(v) == 1}
+
+
 def load_config(config_dir: str | Path | None = None) -> AppConfig:
     cdir = Path(config_dir) if config_dir else DEFAULT_CONFIG_DIR
     ents_raw = _yaml(cdir / "entities.yaml")
@@ -228,6 +254,10 @@ def load_config(config_dir: str | Path | None = None) -> AppConfig:
             p = cdir / ent.mapping
             if p.exists():
                 account_maps[code] = _load_account_map(p)
+                for cap, stmt in _statements_from_pcg(p).items():
+                    group_coa.setdefault(cap, stmt)
+                    labels.setdefault(cap, next(
+                        (v for v in account_maps[code].values() if norm(v) == cap), cap))
 
     return AppConfig(
         config_dir=cdir,

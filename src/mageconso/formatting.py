@@ -125,27 +125,67 @@ class NumberFormatter:
     def excel_number_format(self) -> str:
         """Format de nombre Excel equivalent aux reglages courants.
 
-        Permet d'exporter la VALEUR brute (auditable dans Excel) tout en
-        respectant la presentation demandee.
+        La cellule recoit la VALEUR EXACTE (pleine precision) et ce format en
+        assure l'affichage : l'echelle passe par les virgules finales du format
+        Excel ("#,##0," = milliers), jamais par une division de la valeur. Un
+        montant exporte reste donc reutilisable et auditable dans Excel.
+
+        Limite : Excel applique ses propres separateurs (ceux du poste) et son
+        arrondi d'affichage ; seuls l'echelle, les decimales, le symbole, les
+        negatifs et les zeros sont pilotes ici.
         """
-        dec = "0" + ("." + "0" * self.decimals if self.decimals else "")
-        thousands = "#," + "#" * 2 + dec if self._get("thousands_separator") else dec
-        base = thousands if self._get("thousands_separator") else dec
+        digits = "#,##0" if self._get("thousands_separator") else "0"
+        if self.decimals:
+            digits += "." + "0" * self.decimals
+        scale = str(self._get("scale", "units"))
+        commas = {"thousands": ",", "millions": ",,"}.get(scale, "")
+        sfx = (self._get("scale_suffix") or {}).get(scale, "")
+        num = digits + commas + (f'"{sfx}"' if sfx else "")
+
         sym = str(self._get("currency_symbol", ""))
         pos = str(self._get("currency_position", "none"))
-        if pos == "prefix" and sym:
-            base = f'"{sym} "{base}'
-        elif pos == "suffix" and sym:
-            base = f'{base}" {sym}"'
-        zero = base
+        gap = " " if self._get("currency_space", True) else ""
+        neg_core = f"({num})" if str(self._get("negative_format", "minus")) == "parentheses" else f"-{num}"
+
+        def dress(core: str) -> str:
+            if pos == "prefix" and sym:
+                return f'"{sym}{gap}"{core}'
+            if pos == "suffix" and sym:
+                return f'{core}"{gap}{sym}"'
+            return core
+
+        # deux litteraux accoles ("k"" €") sont fusionnes ("k €")
+        positive = dress(num).replace('""', "")
+        negative = dress(neg_core).replace('""', "")
+        if self._get("negative_colour"):
+            negative = "[Red]" + negative
+
         zd = str(self._get("zero_display", "-"))
-        if zd == "dash" or zd == "-":
-            zero = '"-"'
-        elif zd == "blank":
-            zero = '""'
-        if str(self._get("negative_format", "minus")) == "parentheses":
-            return f"{base};({base});{zero}"
-        return f"{base};-{base};{zero}"
+        if self._get("show_zeros", True) and zd in ("zero", "0"):
+            zero = dress(digits.replace("#,##", ""))
+        else:
+            zero = {"dash": '"-"', "-": '"-"', "blank": '""'}.get(zd, f'"{zd}"')
+        return f"{positive};{negative};{zero}"
+
+    def excel_percent_format(self) -> str:
+        dec = int((self._get("percent") or {}).get("decimals", 1))
+        pattern = "0" + ("." + "0" * dec if dec else "") + "%"
+        return f'{pattern};-{pattern};""'
+
+    def period_end_label(self, end) -> str:
+        """"31 DECEMBER 2025" - libelle des classeurs de reference."""
+        if end is None:
+            return ""
+        months = ["JANUARY", "FEBRUARY", "MARCH", "APRIL", "MAY", "JUNE", "JULY",
+                  "AUGUST", "SEPTEMBER", "OCTOBER", "NOVEMBER", "DECEMBER"]
+        if str(self._get("locale", "fr_FR")).startswith("fr"):
+            months = ["JANVIER", "FEVRIER", "MARS", "AVRIL", "MAI", "JUIN", "JUILLET",
+                      "AOUT", "SEPTEMBRE", "OCTOBRE", "NOVEMBRE", "DECEMBRE"]
+        return f"{end.day} {months[end.month - 1]} {end.year}"
+
+    def scale_note(self) -> str:
+        return {"thousands": "en milliers", "millions": "en millions"}.get(
+            str(self._get("scale", "units")), "")
 
     # ---------------------------------------------------------- period label
     def period_label(self, year: int, month: int | None) -> str:
