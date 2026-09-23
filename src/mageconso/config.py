@@ -87,6 +87,22 @@ class AppConfig:
     # mapping compte local -> compte groupe, par entite
     account_maps: dict[str, dict[str, str]] = field(default_factory=dict)
     group_coa: dict[str, Statement] = field(default_factory=dict)
+    # cle normalisee -> libelle tel qu'ecrit dans les fichiers Mage
+    group_coa_labels: dict[str, str] = field(default_factory=dict)
+
+    def group_coa_captions(self) -> list[str]:
+        return list(self.group_coa_labels.values())
+
+    def mapping_knowledge(self) -> list[tuple[str, str]]:
+        """Couples (libelle de reference, compte groupe) servant aux suggestions
+        de mapping : le plan groupe, plus tous les libelles locaux deja mappes
+        (les numeros de compte, sans valeur de similarite, sont ecartes)."""
+        out = [(c, c) for c in self.group_coa_captions()]
+        for table in self.account_maps.values():
+            for local, caption in table.items():
+                if any(ch.isalpha() for ch in local):
+                    out.append((local, caption))
+        return out
 
     # ------------------------------------------------------------------ FX
     def rate(
@@ -185,15 +201,20 @@ def load_config(config_dir: str | Path | None = None) -> AppConfig:
     # plan de comptes groupe : deduit de la structure des deux etats, complete
     # par le referentiel group_coa.csv si present.
     group_coa: dict[str, Statement] = {}
+    labels: dict[str, str] = {}
     for line in bs.detail_lines():
         group_coa[norm(line)] = Statement.BALANCE_SHEET
+        labels.setdefault(norm(line), line)
     for line in pl.detail_lines():
         group_coa.setdefault(norm(line), Statement.PROFIT_AND_LOSS)
+        labels.setdefault(norm(line), line)
     coa_csv = cdir / "coa" / "group_coa.csv"
     if coa_csv.exists():
         with coa_csv.open(encoding="utf-8", newline="") as fh:
             for row in csv.DictReader(fh):
                 cap = norm(row.get("group_coa"))
+                if cap:
+                    labels.setdefault(cap, (row.get("group_coa") or "").strip())
                 if cap and cap not in group_coa:
                     group_coa[cap] = (
                         Statement.BALANCE_SHEET
@@ -226,4 +247,5 @@ def load_config(config_dir: str | Path | None = None) -> AppConfig:
         source_format=_yaml(cdir / "source_format.yaml"),
         account_maps=account_maps,
         group_coa=group_coa,
+        group_coa_labels=labels,
     )

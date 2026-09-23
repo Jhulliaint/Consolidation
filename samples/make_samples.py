@@ -121,16 +121,30 @@ JP_LOCAL_MAP = [
 ]
 
 
-def build(out_dir: Path) -> list[Path]:
+def rebalance(tb: list[tuple[str, float]],
+              plug: str = "Retained earnings/losses") -> list[tuple[str, float]]:
+    """Reequilibre une balance modifiee en ajustant le compte de report."""
+    gap = sum(v for _, v in tb)
+    return [(c, v - gap) if c == plug else (c, v) for c, v in tb]
+
+
+def build(out_dir: Path, *, sas_tb=None, jp_tb=None,
+          extra_captions: list[str] | None = None) -> list[Path]:
+    """Ecrit les deux classeurs. ``sas_tb`` / ``jp_tb`` remplacent les balances
+    par defaut (scenarios de test : ecart de reciprocite, compte inconnu...)."""
+    out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
     made: list[Path] = []
+    sas_tb = sas_tb if sas_tb is not None else MAGE_SAS_TB
+    jp_tb = jp_tb if jp_tb is not None else MAGE_JAPON_TB
+    pl_captions = PL_CAPTIONS + list(extra_captions or [])
 
     wb = Workbook()
     wb.remove(wb.active)
     _cover(wb, "MAGE SAS", "EUR", 2025)
-    _mapping(wb, [(c, c) for c in BS_CAPTIONS + PL_CAPTIONS])
-    _group_coa(wb, BS_CAPTIONS, PL_CAPTIONS)
-    _trial_balance(wb, "MAGE SAS", MAGE_SAS_TB)
+    _mapping(wb, [(c, c) for c in BS_CAPTIONS + pl_captions])
+    _group_coa(wb, BS_CAPTIONS, pl_captions)
+    _trial_balance(wb, "MAGE SAS", sas_tb)
     p = out_dir / "MA - Mage SAS 2025.xlsx"
     wb.save(p)
     made.append(p)
@@ -138,9 +152,9 @@ def build(out_dir: Path) -> list[Path]:
     wb = Workbook()
     wb.remove(wb.active)
     _cover(wb, "MAGE JAPON KK", "JPY", 2025)
-    _mapping(wb, JP_LOCAL_MAP + [(c, c) for c in BS_CAPTIONS + PL_CAPTIONS])
-    _group_coa(wb, BS_CAPTIONS, PL_CAPTIONS)
-    _trial_balance(wb, "MAGE JAPON KK", MAGE_JAPON_TB)
+    _mapping(wb, JP_LOCAL_MAP + [(c, c) for c in BS_CAPTIONS + pl_captions])
+    _group_coa(wb, BS_CAPTIONS, pl_captions)
+    _trial_balance(wb, "MAGE JAPON KK", jp_tb)
     p = out_dir / "MA - Mage Japon KK 2025.xlsx"
     wb.save(p)
     made.append(p)

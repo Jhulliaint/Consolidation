@@ -18,6 +18,7 @@ from .config import AppConfig, norm
 from .importers.excel import SourceWorkbook
 from .models import (
     ZERO,
+    eur,
     ConsolidationResult,
     ControlResult,
     Severity,
@@ -50,7 +51,7 @@ def run_controls(
                 passed=abs(assets - liab) <= tolerance,
                 expected=assets,
                 actual=liab,
-                detail=f"ecart = {liab - assets}",
+                detail=f"ecart = {eur(liab - assets)} EUR",
             )
         )
 
@@ -70,7 +71,7 @@ def run_controls(
                 expected=pl_net,
                 actual=bs_net,
                 severity=Severity.ERROR,
-                detail=f"ecart = {bs_net - pl_net}",
+                detail=f"ecart = {eur(bs_net - pl_net)} EUR",
             )
         )
 

@@ -13,6 +13,7 @@ from typing import Iterable, Sequence
 
 from .config import AppConfig, norm
 from .importers.excel import SourceWorkbook
+from .suggest import UnmappedAccount, suggest
 from .models import (
     ZERO,
     AuditRecord,
@@ -23,6 +24,7 @@ from .models import (
     RateType,
     Severity,
     Statement,
+    eur,
 )
 
 
@@ -40,6 +42,7 @@ class ConsolidationEngine:
     ) -> ConsolidationResult:
         period = period or self._infer_period(workbooks)
         result = ConsolidationResult(period=period)
+        self._candidates = self.cfg.mapping_knowledge()
 
         for wb in workbooks:
             result.diagnostics.extend(wb.diagnostics)
@@ -80,6 +83,21 @@ class ConsolidationEngine:
                 )
             )
             return
+        if entity_code in result.entity_codes:
+            result.diagnostics.append(
+                Diagnostic(
+                    code="ENT-DUPLICATE",
+                    severity=Severity.ERROR,
+                    message=(
+                        f"'{wb.path.name}' concerne {entity_code}, deja integree "
+                        "par un autre fichier : ignore pour eviter un double "
+                        "comptage. Retirez le doublon ou precisez --entity."
+                    ),
+                    entity=entity_code,
+                    source_file=wb.path.name,
+                )
+            )
+            return
         if not ent.in_scope:
             result.diagnostics.append(
                 Diagnostic(
@@ -107,13 +125,16 @@ class ConsolidationEngine:
                 )
             )
 
+        result.entity_codes.append(entity_code)
         closing_key = closing or wb.closing or f"{result.period.year}-12-31"
-        unknown_accounts: set[str] = set()
+        unknown_accounts: dict[str, Decimal] = {}
 
         for line in wb.lines:
             group = self._map_account(entity_code, line.local_account, wb)
             if group is None:
-                unknown_accounts.add(line.local_account)
+                unknown_accounts[line.local_account] = (
+                    unknown_accounts.get(line.local_account, ZERO) + line.amount
+                )
                 continue
 
             statement = (
@@ -182,14 +203,30 @@ class ConsolidationEngine:
                 )
             )
 
-        for acct in sorted(unknown_accounts):
+        for acct, amount in sorted(unknown_accounts.items()):
+            proposals = suggest(acct, self._candidates)
+            result.unmapped.append(
+                UnmappedAccount(
+                    entity=entity_code,
+                    source_file=wb.path.name,
+                    local_account=acct,
+                    amount=amount,
+                    currency=currency,
+                    suggestions=proposals,
+                )
+            )
+            hint = f" Suggestion : '{proposals[0][0]}'." if proposals else ""
             result.diagnostics.append(
                 Diagnostic(
                     code="MAP-UNKNOWN-ACCOUNT",
-                    severity=Severity.WARNING,
-                    message=f"Compte source non mappe, exclu du consolide : {acct!r}",
+                    severity=Severity.ERROR if amount != ZERO else Severity.WARNING,
+                    message=(
+                        f"Compte source non mappe, EXCLU du consolide : {acct!r} "
+                        f"({eur(amount)} {currency}).{hint}"
+                    ),
                     entity=entity_code,
                     source_file=wb.path.name,
+                    context=acct,
                 )
             )
 
@@ -214,11 +251,18 @@ class ConsolidationEngine:
                 )
             )
 
-        self._finalise_entity(result, entity_code, wb.path.name)
+        self._finalise_entity(
+            result, entity_code, wb.path.name, currency, closing_key
+        )
 
     # ------------------------------------------------- resultat + ecart de conv.
     def _finalise_entity(
-        self, result: ConsolidationResult, entity: str, source: str
+        self,
+        result: ConsolidationResult,
+        entity: str,
+        source: str,
+        currency: str,
+        closing: str,
     ) -> None:
         """Ajoute, pour une entite, les deux lignes que le bilan ne porte pas
         directement dans la balance source :
@@ -229,10 +273,21 @@ class ConsolidationEngine:
            entre le resultat du compte de resultat et cette ligne du bilan.
 
         2. l'ECART DE CONVERSION : le bilan est converti au taux de cloture et le
-           compte de resultat au taux moyen ; la balance, equilibree en devise
-           locale, ne l'est donc plus en euros. Le residu est porte sur la ligne
-           parametree dans fx.yaml (par defaut "Consolidation reserves").
-           REGLE DEDUITE - a valider (Q-6.4).
+           compte de resultat au taux moyen (le capital au taux historique) ; la
+           balance, equilibree en devise locale, ne l'est donc plus en euros.
+           L'ecart est porte sur la ligne parametree dans fx.yaml (par defaut
+           "Consolidation reserves"). REGLE DEDUITE - a valider (Q-6.4).
+
+           L'ecart est calcule ANALYTIQUEMENT - seule la part due a la
+           difference de taux - et non comme "ce qui manque pour equilibrer" :
+
+               ecart = (bilan en EUR aux taux appliques)
+                       - (bilan en devise locale / taux de cloture)
+
+           Ainsi un compte non mappe ou non converti n'est jamais maquille en
+           ecart de conversion : il reste visible comme un desequilibre du bilan
+           (controle C1), en plus de son propre diagnostic. Pour une entite en
+           euros, l'ecart est nul par construction.
         """
         own = [
             ln
@@ -242,43 +297,33 @@ class ConsolidationEngine:
         if not own:
             return
 
-        pl_total = sum(
-            (ln.amount_eur for ln in own if ln.statement is Statement.PROFIT_AND_LOSS),
-            ZERO,
-        )
+        pl = [ln for ln in own if ln.statement is Statement.PROFIT_AND_LOSS]
+        bs = [ln for ln in own if ln.statement is Statement.BALANCE_SHEET]
+        pl_eur = sum((ln.amount_eur for ln in pl), ZERO)
+        pl_local = sum((ln.amount_local for ln in pl), ZERO)
+
         result_line = "Profit/loss net income"
-        already = any(
-            norm(ln.group_coa) == norm(result_line)
-            and ln.statement is Statement.BALANCE_SHEET
-            for ln in own
-        )
-        if pl_total != ZERO and not already:
+        already = any(norm(ln.group_coa) == norm(result_line) for ln in bs)
+        derived_eur = derived_local = ZERO
+        if pl_eur != ZERO and not already:
+            derived_eur, derived_local = pl_eur, pl_local
             self._push_derived(
-                result, entity, result_line, pl_total, source,
+                result, entity, result_line, pl_eur, source,
                 "resultat de l'exercice reporte au bilan", "derived_result",
             )
 
-        residual = sum((ln.amount_eur for ln in own), ZERO)
-        if already:
-            residual = sum(
-                (
-                    ln.amount_eur
-                    for ln in own
-                    if not (
-                        norm(ln.group_coa) == norm(result_line)
-                        and ln.statement is Statement.BALANCE_SHEET
-                    )
-                ),
-                ZERO,
-            )
-            residual += pl_total
-
         cta_line = self.cfg.fx.get("translation_difference_line")
-        if cta_line and residual != ZERO:
+        eom = self.cfg.rate(currency, closing, RateType.EOM)
+        if not cta_line or not eom:
+            return
+        bs_eur = sum((ln.amount_eur for ln in bs), ZERO) + derived_eur
+        bs_local = sum((ln.amount_local for ln in bs), ZERO) + derived_local
+        cta = bs_eur - bs_local / eom
+        if cta != ZERO:
             self._push_derived(
-                result, entity, cta_line, -residual, source,
+                result, entity, cta_line, -cta, source,
                 "ecart de conversion (bilan au taux de cloture / resultat au "
-                "taux moyen)", "fx_translation",
+                "taux moyen / capital au taux historique)", "fx_translation",
             )
 
     def _push_derived(
@@ -375,12 +420,25 @@ class ConsolidationEngine:
         """Genere la colonne ELIMINATION.
 
         Regle appliquee (DEDUITE, cf. docs/04) : pour chaque groupe de comptes
-        reciproques, l'exposition nette du groupe est ramenee a zero. L'ecriture
-        generee est equilibree et tracee ; tout residu est signale.
+        reciproques, les deux cotes sont annules a 100 %.
+
+        Toute ecriture d'elimination est EQUILIBREE : si les deux cotes ne se
+        compensent pas exactement (ecart de change, decalage d'enregistrement),
+        l'ecart est porte sur la ligne de residu parametree pour l'etat concerne
+        (``residual_lines``). Sans cela, un ecart de quelques euros suffirait a
+        desequilibrer le bilan consolide.
+
+        Un groupe dont un seul cote est present n'est PAS elimine par defaut
+        (``one_sided: warn``) : faute de contrepartie, rien ne prouve que le
+        montant est integralement intragroupe.
         """
         cfg = self.cfg.eliminations
         tolerance = Decimal(str(cfg.get("tolerance", 1)))
-        totals = result.by_group_coa()
+        one_sided = str(cfg.get("one_sided", "warn"))
+        residual_lines = cfg.get("residual_lines") or {}
+        totals: dict[str, Decimal] = {}
+        for caption, amount in result.by_group_coa().items():
+            totals[norm(caption)] = totals.get(norm(caption), ZERO) + amount
 
         groups: list[tuple[str, list[str], list[str]]] = []
         for pair in cfg.get("reciprocal_pairs") or []:
@@ -401,44 +459,76 @@ class ConsolidationEngine:
             )
 
         for name, side_a, side_b in groups:
-            present_a = [c for c in side_a if self._present(totals, c)]
-            present_b = [c for c in side_b if self._present(totals, c)]
+            present_a = [c for c in side_a if totals.get(norm(c), ZERO) != ZERO]
+            present_b = [c for c in side_b if totals.get(norm(c), ZERO) != ZERO]
             if not present_a and not present_b:
                 continue
 
-            sum_a = sum((totals.get(c, ZERO) for c in present_a), ZERO)
-            sum_b = sum((totals.get(c, ZERO) for c in present_b), ZERO)
+            sum_a = sum((totals[norm(c)] for c in present_a), ZERO)
+            sum_b = sum((totals[norm(c)] for c in present_b), ZERO)
             net = sum_a + sum_b
 
-            # Contre-ecriture : on annule chaque cote a 100 %.
-            for caption in present_a + present_b:
-                amount = totals.get(caption, ZERO)
-                if amount == ZERO:
+            if not present_a or not present_b:
+                amount = sum_a or sum_b
+                if one_sided != "eliminate":
+                    result.diagnostics.append(
+                        Diagnostic(
+                            code="ELIM-ONE-SIDED",
+                            severity=Severity.WARNING,
+                            message=(
+                                f"'{name}' : {eur(amount)} EUR sans contrepartie "
+                                "intragroupe identifiee - NON elimine. A justifier, "
+                                "ou a declarer dans eliminations.yaml (Q-7.2)."
+                            ),
+                            context=name,
+                        )
+                    )
                     continue
+
+            # Contre-ecriture : on annule chaque cote a 100 %.
+            statement = None
+            for caption in present_a + present_b:
+                amount = totals[norm(caption)]
+                statement = statement or self.cfg.statement_of(caption)
                 self._push_elimination(result, caption, -amount, name)
 
+            if net == ZERO:
+                continue
+
+            # L'ecriture doit s'equilibrer : l'ecart part sur la ligne de residu.
+            stmt = statement or Statement.BALANCE_SHEET
+            residual = residual_lines.get(stmt.value)
+            if residual:
+                self._push_elimination(
+                    result, residual, net, f"{name} - ecart de reciprocite",
+                    statement=stmt,
+                )
             if abs(net) > tolerance:
+                where = f"porte sur '{residual}'" if residual else "NON compense"
                 result.diagnostics.append(
                     Diagnostic(
                         code="ELIM-RECIPROCITY",
                         severity=Severity.WARNING,
                         message=(
-                            f"Ecart de reciprocite sur '{name}' : {net:.2f} EUR "
-                            f"(tolerance {tolerance}). Les deux cotes ont ete "
-                            "elimines integralement ; l'ecart reste a justifier."
+                            f"Ecart de reciprocite sur '{name}' : {eur(net)} EUR "
+                            f"(tolerance {tolerance}), {where}. Ecart a justifier."
                         ),
                         context=name,
                     )
                 )
 
-    @staticmethod
-    def _present(totals: dict[str, Decimal], caption: str) -> bool:
-        return norm(caption) in {norm(k) for k in totals}
-
     def _push_elimination(
-        self, result: ConsolidationResult, caption: str, amount: Decimal, reason: str
+        self,
+        result: ConsolidationResult,
+        caption: str,
+        amount: Decimal,
+        reason: str,
+        *,
+        statement: Statement | None = None,
     ) -> None:
-        statement = self.cfg.statement_of(caption) or Statement.BALANCE_SHEET
+        statement = (
+            statement or self.cfg.statement_of(caption) or Statement.BALANCE_SHEET
+        )
         result.lines.append(
             ConsolidatedLine(
                 group_coa=self._canonical(caption, result),

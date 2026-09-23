@@ -18,7 +18,22 @@ enabled: true
 # Le total consolide doit etre : somme des entites + eliminations
 # (la colonne ELIMINATION porte des montants signes, FAIT OBSERVE).
 control_balance: true          # toute ecriture d'elimination doit sommer a 0
-tolerance: 1.00               # EUR - tolerance de reciprocite (HYPOTHESE Q-7.3)
+tolerance: 1.00               # EUR - seuil d'alerte de reciprocite (HYPOTHESE Q-7.3)
+
+# Ecart de reciprocite (ex. creance 90 000 EUR / dette 89 983 EUR apres change) :
+# les deux cotes sont elimines a 100 % et l'ECART est porte sur la ligne
+# ci-dessous, afin que l'ecriture d'elimination reste equilibree. Sans cela, un
+# ecart de quelques euros desequilibrerait le bilan consolide.
+# Lignes d'imputation : HYPOTHESE A VALIDER (Q-7.3).
+residual_lines:
+  BALANCE_SHEET: Consolidation reserves
+  PROFIT_AND_LOSS: Other income (expense) net
+
+# Groupe dont un seul cote est present (ex. "Management fees" factures par la
+# mere, sans poste de charge symetrique chez la filiale) :
+#   warn      -> NON elimine, avertissement ELIM-ONE-SIDED (defaut, prudent)
+#   eliminate -> elimine, la contrepartie part sur la ligne de residu
+one_sided: warn
 
 # ---------------------------------------------------------------------------
 # 1. Comptes reciproques de BILAN

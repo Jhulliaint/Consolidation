@@ -20,6 +20,14 @@ from typing import Iterable
 ZERO = Decimal("0")
 
 
+def _norm_caption(caption: str | None) -> str:
+    """Meme normalisation que config.norm (dupliquee pour eviter un import
+    circulaire) : espaces insecables et multiples, casse."""
+    if caption is None:
+        return ""
+    return " ".join(str(caption).replace("\xa0", " ").split()).lower()
+
+
 class Statement(str, Enum):
     BALANCE_SHEET = "BALANCE_SHEET"
     PROFIT_AND_LOSS = "PROFIT_AND_LOSS"
@@ -184,6 +192,10 @@ class ConsolidationResult:
     audit: list[AuditRecord] = field(default_factory=list)
     controls: list[ControlResult] = field(default_factory=list)
     diagnostics: list[Diagnostic] = field(default_factory=list)
+    # comptes sources exclus faute de mapping (suggest.UnmappedAccount)
+    unmapped: list = field(default_factory=list)
+    # entites effectivement integrees, dans l'ordre de lecture
+    entity_codes: list[str] = field(default_factory=list)
 
     # -- agregations -------------------------------------------------------
     def total(
@@ -194,11 +206,12 @@ class ConsolidationResult:
         cost_centre: str | None = None,
         origin: str | None = None,
     ) -> Decimal:
+        key = _norm_caption(group_coa)
         return sum(
             (
                 ln.amount_eur
                 for ln in self.lines
-                if ln.group_coa == group_coa
+                if _norm_caption(ln.group_coa) == key
                 and (entity is None or ln.entity == entity)
                 and (cost_centre is None or ln.cost_centre == cost_centre)
                 and (origin is None or ln.origin == origin)
@@ -237,3 +250,14 @@ class ConsolidationResult:
 
 def sum_amounts(values: Iterable[Decimal]) -> Decimal:
     return sum(values, ZERO)
+
+
+def eur(value: Decimal | None, decimals: int = 2) -> str:
+    """Montant lisible pour les MESSAGES (diagnostics, controles) : "-40 000,00".
+
+    Ne sert jamais au calcul ni aux etats, qui passent par formatting.py.
+    """
+    if value is None:
+        return ""
+    txt = f"{Decimal(value):,.{decimals}f}"
+    return txt.replace(",", " ").replace(".", ",")
