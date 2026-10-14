@@ -20,7 +20,46 @@
 | **L13** | Taux : fichier, pré-contrôle, détection d'erreurs ; suggestions de mapping | **Fait** |
 | **L14** | Vues par entité, % du CA, marge par famille ; `mageconso check` ; contrôle C10 | **Fait** |
 
-## 9.2 Suite, par ordre de priorité
+## 9.2 Décisions du 14/10/2026
+
+| # | Décision | Conséquence |
+|---|---|---|
+| DEC-1 | **L'application devient la référence.** Aucun classeur consolidé externe ne servira plus de point de comparaison. | Le rapprochement `--reference` reste utile une seule fois, pour valider l'application sur une clôture historique produite sous Excel. Il ne fait plus partie du processus courant. |
+| DEC-2 | **Les management accounts des filiales arrivent par e-mail**, envoyés par les cabinets de paie. Leur récupération doit être automatique. | Nouveau chantier C-A ci-dessous. |
+| DEC-3 | **MAGE SAS et SICCA ne reçoivent pas de management accounts.** Leurs données équivalentes seront construites par une fonctionnalité de l'application. | Nouveau chantier C-B ci-dessous. |
+
+Les deux chantiers sont **réservés pour plus tard**. Rien n'est développé à ce stade.
+
+### Chantier C-A — Récupération automatique des management accounts *(réservé)*
+
+Tâche planifiée qui relève la boîte de réception, repère les e-mails des cabinets
+de paie, extrait les pièces jointes Excel, identifie l'entité et la période, puis
+les classe dans un dossier de collecte (un par clôture) en gardant une trace
+(expéditeur, date, nom du fichier, empreinte). Les doublons et les versions
+corrigées sont signalés, jamais écrasés en silence.
+
+Questions à trancher avant de commencer :
+
+- quelle boîte (Outlook / Microsoft 365, `office@corthay.com` ?) et quel moyen d'accès (Microsoft Graph, règle Outlook vers un dossier OneDrive, Power Automate) ;
+- la liste des cabinets expéditeurs et des entités que chacun couvre ;
+- le calendrier d'envoi (vers quel jour du mois) et la fréquence du relevé ;
+- la règle de choix lorsqu'un cabinet renvoie une version corrigée ;
+- le dossier de destination (SharePoint `CORTHAY/CLOTURE MENSUELLES/<année>` ?).
+
+### Chantier C-B — Données de MAGE SAS et SICCA *(réservé)*
+
+Fonctionnalité qui produit pour MAGE SAS et SICCA l'équivalent d'un management
+account, à partir de leur comptabilité. Les tables de correspondance existent
+déjà (`config/mapping/mage_sas_accounts.csv`, `sicca_accounts.csv`, comptes PCG
+à 8 chiffres).
+
+Questions à trancher avant de commencer :
+
+- la source : balance générale exportée de Sage (format, fréquence), ou autre ;
+- l'axe analytique (sections `921S*`) : est-il présent dans l'export ?
+- le traitement des écritures de clôture faites par l'expert-comptable après l'export.
+
+## 9.3 Suite, par ordre de priorité
 
 ### Étape 1 — Rapprochement aux fichiers réels *(bloquée : Q-0.1)*
 
@@ -94,7 +133,7 @@ Par ordre de valeur décroissante :
 3. génération de la liasse fiscale depuis `liasse_fiscale.csv` — 3 j ;
 4. reprise des flux `PRI MAGE` / `PRI SICCA` — à cadrer (Q-7.7, Q-13.3).
 
-## 9.3 Chemin critique
+## 9.4 Chemin critique
 
 ```
 Q-0.1 (fichiers 2025) ──► Étape 1 (rapprochement) ──► mise en production
@@ -107,7 +146,7 @@ Q-5.4 (analytique) ────► Étape 3 ──► état par centre de coûts
 Les étapes 4 à 7 sont des extensions : elles ne conditionnent pas la mise en
 service des deux états demandés.
 
-## 9.4 Recommandation
+## 9.5 Recommandation
 
 Ne pas mettre en production avant l'étape 1. Le prototype est complet et
 cohérent, mais **sa conformité aux états Mage n'est pas encore démontrée** : elle
