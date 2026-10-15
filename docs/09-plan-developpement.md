@@ -53,10 +53,14 @@ identifie l'entité (feuille *Cover*) et la période, puis les range dans un
 dossier de collecte par clôture, avec une trace (expéditeur, date de l'e-mail,
 nom du fichier, empreinte). Un e-mail déjà traité n'est jamais retraité.
 
-Reste aussi à décider :
+Validé le 15/10/2026 :
 
-- l'emplacement du dossier de collecte (proposition : `CORTHAY/CLOTURE MENSUELLES/<année>/<mois>/`) ;
-- la règle de choix quand un cabinet renvoie une version corrigée (par défaut : garder toutes les versions, retenir la plus récente, et le signaler) ;
+- **dossier de collecte** : `CORTHAY/CLOTURE MENSUELLES/<année>/<mois>/` ;
+- **version corrigée** renvoyée par un cabinet : toutes les versions sont conservées, la plus récente est retenue pour la consolidation, et le remplacement est signalé.
+
+Reste à décider au démarrage du chantier :
+
+
 - le moyen d'accès (Microsoft Graph depuis une tâche planifiée, ou flux Power Automate).
 
 ### Chantier C-B — Données de MAGE SAS et SICCA *(réservé)*
