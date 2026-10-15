@@ -60,7 +60,6 @@ Validé le 15/10/2026 :
 
 Reste à décider au démarrage du chantier :
 
-
 - le moyen d'accès (Microsoft Graph depuis une tâche planifiée, ou flux Power Automate).
 
 ### Chantier C-B — Données de MAGE SAS et SICCA *(réservé)*
