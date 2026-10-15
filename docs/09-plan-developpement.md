@@ -58,9 +58,18 @@ Validé le 15/10/2026 :
 - **dossier de collecte** : `CORTHAY/CLOTURE MENSUELLES/<année>/<mois>/` ;
 - **version corrigée** renvoyée par un cabinet : toutes les versions sont conservées, la plus récente est retenue pour la consolidation, et le remplacement est signalé.
 
-Reste à décider au démarrage du chantier :
+- **moyen d'accès** : un **scénario Make** (Make.com) lit la boîte mail.
 
-- le moyen d'accès (Microsoft Graph depuis une tâche planifiée, ou flux Power Automate).
+Répartition des rôles retenue :
+
+| Étape | Qui |
+|---|---|
+| Surveiller les deux dossiers Outlook, filtrer les expéditeurs ATAC et Forvis Mazars | scénario Make (module Microsoft 365 Email) |
+| Extraire les pièces jointes `.xlsx` / `.xlsm` et les déposer dans `CORTHAY/CLOTURE MENSUELLES/<année>/<mois>/` | scénario Make (module OneDrive / SharePoint) |
+| Ne jamais retraiter un e-mail (identifiant du message mémorisé) et tenir le journal de collecte (expéditeur, date, fichier) | scénario Make (data store) |
+| Identifier l'entité et la période, retenir la version la plus récente et signaler un remplacement | application (lecture du dossier de collecte) |
+
+Le dépôt de fichiers par Make horodate chaque version au lieu d'écraser la précédente. C'est ce qui rend applicable la règle « toutes les versions conservées ».
 
 ### Chantier C-B — Données de MAGE SAS et SICCA *(réservé)*
 
