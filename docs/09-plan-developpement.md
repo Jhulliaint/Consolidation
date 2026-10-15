@@ -43,12 +43,19 @@ Réponses du 15/10/2026 :
 | Point | Réponse | Reste à préciser |
 |---|---|---|
 | Boîte mail | `office@corthay.com` (Microsoft 365) | — |
-| Expéditeurs | **ATAC** et **Forvis Mazars**, tous deux indiqués pour Mage Asia Pacific | Lequel des deux envoie les comptes de **Mage Japon KK** ? |
-| Calendrier d'envoi | Aléatoire | Le job relèvera donc la boîte à intervalle régulier, sans date fixe attendue |
-| Dossiers | « Mage Asia Pacific/accounting » et « Mage Japon » | Ces dossiers n'existent pas dans le OneDrive. S'agit-il de **dossiers Outlook** où les e-mails sont classés (le job lirait alors ces dossiers) ou de dossiers de destination à créer ? |
+| Expéditeurs | **ATAC** → Mage Asia Pacific ; **Forvis Mazars** → Mage Asia Pacific et Mage Japon KK | — |
+| Calendrier d'envoi | Aléatoire | Le job relève la boîte à intervalle régulier, sans date fixe attendue |
+| Source | **Dossiers Outlook** de `office@corthay.com` : « Mage Asia Pacific/accounting » et « Mage Japon », où les e-mails sont déjà classés | — |
+
+Fonctionnement retenu : le job lit les deux dossiers Outlook, repère les
+e-mails d'ATAC et de Forvis Mazars, en extrait les pièces jointes Excel,
+identifie l'entité (feuille *Cover*) et la période, puis les range dans un
+dossier de collecte par clôture, avec une trace (expéditeur, date de l'e-mail,
+nom du fichier, empreinte). Un e-mail déjà traité n'est jamais retraité.
 
 Reste aussi à décider :
 
+- l'emplacement du dossier de collecte (proposition : `CORTHAY/CLOTURE MENSUELLES/<année>/<mois>/`) ;
 - la règle de choix quand un cabinet renvoie une version corrigée (par défaut : garder toutes les versions, retenir la plus récente, et le signaler) ;
 - le moyen d'accès (Microsoft Graph depuis une tâche planifiée, ou flux Power Automate).
 
