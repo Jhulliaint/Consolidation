@@ -38,13 +38,19 @@ les classe dans un dossier de collecte (un par clôture) en gardant une trace
 (expéditeur, date, nom du fichier, empreinte). Les doublons et les versions
 corrigées sont signalés, jamais écrasés en silence.
 
-Questions à trancher avant de commencer :
+Réponses du 15/10/2026 :
 
-- quelle boîte (Outlook / Microsoft 365, `office@corthay.com` ?) et quel moyen d'accès (Microsoft Graph, règle Outlook vers un dossier OneDrive, Power Automate) ;
-- la liste des cabinets expéditeurs et des entités que chacun couvre ;
-- le calendrier d'envoi (vers quel jour du mois) et la fréquence du relevé ;
-- la règle de choix lorsqu'un cabinet renvoie une version corrigée ;
-- le dossier de destination (SharePoint `CORTHAY/CLOTURE MENSUELLES/<année>` ?).
+| Point | Réponse | Reste à préciser |
+|---|---|---|
+| Boîte mail | `office@corthay.com` (Microsoft 365) | — |
+| Expéditeurs | **ATAC** et **Forvis Mazars**, tous deux indiqués pour Mage Asia Pacific | Lequel des deux envoie les comptes de **Mage Japon KK** ? |
+| Calendrier d'envoi | Aléatoire | Le job relèvera donc la boîte à intervalle régulier, sans date fixe attendue |
+| Dossiers | « Mage Asia Pacific/accounting » et « Mage Japon » | Ces dossiers n'existent pas dans le OneDrive. S'agit-il de **dossiers Outlook** où les e-mails sont classés (le job lirait alors ces dossiers) ou de dossiers de destination à créer ? |
+
+Reste aussi à décider :
+
+- la règle de choix quand un cabinet renvoie une version corrigée (par défaut : garder toutes les versions, retenir la plus récente, et le signaler) ;
+- le moyen d'accès (Microsoft Graph depuis une tâche planifiée, ou flux Power Automate).
 
 ### Chantier C-B — Données de MAGE SAS et SICCA *(réservé)*
 
