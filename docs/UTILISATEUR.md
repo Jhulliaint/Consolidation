@@ -289,7 +289,7 @@ Deux scénarios Make relèvent la boîte `office@corthay.com` toutes les 2 heure
 
 | Dossier Outlook | Cabinets | Entité |
 |---|---|---|
-| Mage Asia Pacific / Accounting | ATAC, Forvis Mazars | MAGE_ASIA_PACIFIC |
+| Mage Asia Pacific / Accounting | ATAC, Forward | MAGE_ASIA_PACIFIC |
 | Mage Japon | Forvis Mazars | MAGE_JAPON_KK |
 
 Chaque classeur Excel joint à un e-mail de ces cabinets est copié dans

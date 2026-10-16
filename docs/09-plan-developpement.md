@@ -44,12 +44,12 @@ Réponses du 15/10/2026 :
 | Point | Réponse | Reste à préciser |
 |---|---|---|
 | Boîte mail | `office@corthay.com` (Microsoft 365) | — |
-| Expéditeurs | **ATAC** → Mage Asia Pacific ; **Forvis Mazars** → Mage Asia Pacific et Mage Japon KK | — |
+| Expéditeurs | **ATAC** et **Forward** (`forwardsec.com`) → Mage Asia Pacific ; **Forvis Mazars** → Mage Japon KK (précisé le 16/10/2026) | — |
 | Calendrier d'envoi | Aléatoire | Le job relève la boîte à intervalle régulier, sans date fixe attendue |
 | Source | **Dossiers Outlook** de `office@corthay.com` : « Mage Asia Pacific/accounting » et « Mage Japon », où les e-mails sont déjà classés | — |
 
 Fonctionnement retenu : le job lit les deux dossiers Outlook, repère les
-e-mails d'ATAC et de Forvis Mazars, en extrait les pièces jointes Excel,
+e-mails des cabinets (ATAC, Forward, Forvis Mazars), en extrait les pièces jointes Excel,
 identifie l'entité (feuille *Cover*) et la période, puis les range dans un
 dossier de collecte par clôture, avec une trace (expéditeur, date de l'e-mail,
 nom du fichier, empreinte). Un e-mail déjà traité n'est jamais retraité.
@@ -65,7 +65,7 @@ Répartition des rôles retenue :
 
 | Étape | Qui |
 |---|---|
-| Surveiller les deux dossiers Outlook, filtrer les expéditeurs ATAC et Forvis Mazars | scénario Make (module Microsoft 365 Email) |
+| Surveiller les deux dossiers Outlook, filtrer les expéditeurs des cabinets | scénario Make (module Microsoft 365 Email) |
 | Extraire les pièces jointes `.xlsx` / `.xlsm` et les déposer dans `CORTHAY/CLOTURE MENSUELLES/<année>/<mois>/` | scénario Make (module OneDrive / SharePoint) |
 | Ne jamais retraiter un e-mail (identifiant du message mémorisé) et tenir le journal de collecte (expéditeur, date, fichier) | scénario Make (data store) |
 | Identifier l'entité et la période, retenir la version la plus récente et signaler un remplacement | application (lecture du dossier de collecte) |
@@ -79,7 +79,7 @@ Le dépôt de fichiers par Make horodate chaque version au lieu d'écraser la pr
 | Objet | Identifiant | Rôle |
 |---|---|---|
 | Scénario « Consolidation - Collecte MA Mage Japon » | 9984770 | dossier Outlook « Mage Japon », expéditeurs `forvismazars.com` |
-| Scénario « Consolidation - Collecte MA Mage Asia Pacific » | 9986367 | dossier « Mage Asia Pacific/Accounting », expéditeurs `atac.com.hk` et `forvismazars.com` |
+| Scénario « Consolidation - Collecte MA Mage Asia Pacific » | 9986367 | dossier « Mage Asia Pacific/Accounting », expéditeurs `atac.com.hk` (ATAC) et `forwardsec.com` (Forward) |
 | Data store « Collecte management accounts » | 197179 | un enregistrement par e-mail traité (clé : identifiant du message) |
 
 Les deux scénarios sont **actifs**, et relèvent leur dossier **toutes les 2 heures**.

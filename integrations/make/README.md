@@ -11,7 +11,7 @@ Organisation Make 937102 (zone eu2), équipe 119554.
 | Objet | ID | Détail |
 |---|---|---|
 | Scénario « Consolidation - Collecte MA Mage Japon » | 9984770 | dossier Outlook « Mage Japon » ; expéditeurs `forvismazars.com` |
-| Scénario « Consolidation - Collecte MA Mage Asia Pacific » | 9986367 | dossier « Mage Asia Pacific / Accounting » ; expéditeurs `atac.com.hk`, `forvismazars.com` |
+| Scénario « Consolidation - Collecte MA Mage Asia Pacific » | 9986367 | dossier « Mage Asia Pacific / Accounting » ; expéditeurs `atac.com.hk` (ATAC), `forwardsec.com` (Forward) |
 | Data store « Collecte management accounts » | 197179 | structure 643807 ; clé = identifiant du message Outlook |
 | Connexion Microsoft | 14526401 | « Julien's Microsoft connection » (office@corthay.com) — Outlook et OneDrive |
 

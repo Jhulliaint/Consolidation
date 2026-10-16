@@ -18,7 +18,7 @@ reporting_currency: EUR
 #            Make dans le dossier de collecte (docs/09, chantier C-A). Le
 #            controle COLLECT-MISSING signale une entite "email" absente.
 #   (absent) -> fichier fourni a la main.
-# FAIT OBSERVE / DECISION : Mage Asia Pacific (ATAC) et Mage Japon (Forvis
+# DECISION : Mage Asia Pacific (ATAC, Forward) et Mage Japon (Forvis
 # Mazars) envoient leurs management accounts a office@corthay.com.
 
 entities:
@@ -91,7 +91,7 @@ entities:
     role: subsidiary
     method: full            # HYPOTHESE
     ownership: 1.00         # HYPOTHESE
-    source: email           # ATAC -> Outlook "Mage Asia Pacific/Accounting"
+    source: email           # ATAC, Forward -> Outlook "Mage Asia Pacific/Accounting"
 
   - code: MAGE_JAPON_KK
     name: MAGE JAPON KK

@@ -67,7 +67,7 @@
             {
               "a": "{{1.from.emailAddress.address}}",
               "o": "text:contain:ci",
-              "b": "forvismazars.com"
+              "b": "forwardsec.com"
             },
             {
               "a": "{{1.hasAttachments}}",

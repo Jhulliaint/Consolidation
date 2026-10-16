@@ -4,7 +4,8 @@
 
 - **Scénarios Make** (actifs, relève toutes les 2 heures) : « Consolidation -
   Collecte MA Mage Japon » (9984770) et « … Mage Asia Pacific » (9986367). Ils
-  copient les pièces jointes Excel des cabinets (ATAC, Forvis Mazars) dans
+  copient les pièces jointes Excel des cabinets (ATAC et Forward pour Mage Asia Pacific, Forvis Mazars
+  pour Mage Japon) dans
   `CORTHAY/CLOTURE MENSUELLES/<année>/<mois>/`, en horodatant le nom du fichier.
   Le data store 197179 empêche qu'un e-mail soit traité deux fois et tient le journal de collecte.
   Blueprints reproductibles : `integrations/make/build_blueprints.py`.

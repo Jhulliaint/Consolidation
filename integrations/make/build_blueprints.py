@@ -32,7 +32,7 @@ SCENARIOS = [
         "name": "Consolidation - Collecte MA Mage Asia Pacific",
         "folder": FOLDER_APAC,
         "folder_label": ["Mage Asia Pacific", "Accounting"],
-        "senders": ["atac.com.hk", "forvismazars.com"],
+        "senders": ["atac.com.hk", "forwardsec.com"],
     },
     {
         "entity": "MAGE_JAPON_KK",
