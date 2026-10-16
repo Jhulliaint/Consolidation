@@ -48,7 +48,12 @@ group_coa_sheet:
 trial_balance_sheet:
   sheet_names: ["Trial balance", "TRIAL BALANCE", "Balance"]
   headers:
-    caption: ["Account description"]
+    caption: ["Account description", "Libelle", "Libellé", "Intitule", "Intitulé"]
+    # facultatifs : numero de compte local et section analytique (921S*)
+    account_id: ["Account", "Account ID", "Account number", "N° Compte",
+                 "Compte", "Numero de compte", "Numéro de compte"]
+    cost_centre: ["Section", "Section analytique", "Analytique", "Cost centre",
+                  "Cost center", "Centre de couts", "Centre de coûts"]
     debit: ["Debit", "Débit"]
     credit: ["Credit", "Crédit"]
     ending_balance: ["Ending balance", "Solde"]

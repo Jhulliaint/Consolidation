@@ -66,6 +66,13 @@ def _text(value: Any) -> str:
     return "" if value is None else str(value).strip()
 
 
+def _account_text(value: Any) -> str:
+    """Numero de compte en texte : 70115000 (lu comme nombre) -> "70115000"."""
+    if isinstance(value, float) and value.is_integer():
+        return str(int(value))
+    return _text(value)
+
+
 def _match(label: str, candidates: Iterable[str]) -> bool:
     key = norm(label)
     return any(key == norm(c) for c in candidates)
@@ -269,6 +276,7 @@ class ManagementAccountsReader:
             return
         bal_col = cols.get("ending_balance")
         dr_col, cr_col = cols.get("debit"), cols.get("credit")
+        acct_col, cc_col = cols.get("account_id"), cols.get("cost_centre")
         flip = (
             str(spec.get("sign_convention", "DEBIT_PLUS_CREDIT_MINUS"))
             != str(self.fmt.get("output_sign_convention", "DEBIT_MINUS_CREDIT_PLUS"))
@@ -291,17 +299,22 @@ class ManagementAccountsReader:
                 amount = dr - cr
             if amount is None:
                 continue
+            # numero de compte local (balance Sage : "70115000") s'il existe,
+            # sinon le libelle sert de cle (management accounts des filiales)
+            number = _account_text(sh.cell(row=r, column=acct_col).value) if acct_col else ""
+            section = _text(sh.cell(row=r, column=cc_col).value) if cc_col else ""
             out.lines.append(
                 SourceLine(
                     entity=entity,
                     period=period,
-                    local_account=caption,
+                    local_account=number or caption,
                     local_label=caption,
                     amount=-amount if flip else amount,
                     currency=out.currency or "EUR",
                     source_file=out.path.name,
                     source_sheet=sh.title,
                     source_row=r,
+                    cost_centre=section or None,
                 )
             )
 

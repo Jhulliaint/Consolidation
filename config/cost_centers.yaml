@@ -119,5 +119,53 @@ technical_columns:
 allocation:
   method: direct
   drivers: []
-  # Centre de couts applique lorsque la source ne porte aucune section :
+  # Centre de couts applique lorsque la source ne porte aucune section ET
+  # qu'aucune regle ci-dessous ne s'applique :
   default_cost_center: UNALLOCATED
+
+  # -------------------------------------------------------------------------
+  # Regles d'affectation par compte.
+  #
+  # Ordre de priorite pour chaque ligne :
+  #   1. section analytique portee par la source (colonne "Section", 921S*) ;
+  #   2. premiere regle ci-dessous qui s'applique ;
+  #   3. default_cost_center.
+  # Une regle s'applique si l'entite et l'etat concordent ET si le numero de
+  # compte local figure dans "accounts" OU si le libelle local correspond a
+  # "label_pattern" (expression reguliere, casse ignoree).
+  # -------------------------------------------------------------------------
+  rules:
+    # SECTION E-SHOP (921S14 -> E COMMERCE)
+    # FAIT OBSERVE : MAPPING MAGE SAS.xlsx comporte 22 comptes de produits
+    # dont le libelle designe l'e-shop ("VTE E-SHOP", "PORT REFACT E-SHOP"...).
+    # DEDUCTION : ces produits relevent de la section E COMMERCE. Ils sont donc
+    # affectes a ce centre lorsque la balance ne porte pas la section 921S14.
+    # Le compte de TVA collectee e-shop (44571200, bilan) n'est pas concerne.
+    - name: Ventes e-shop
+      entity: MAGE_SAS
+      cost_centre: E_COMMERCE
+      statements: [PROFIT_AND_LOSS]
+      label_pattern: 'E-?\s?SHOP'
+      accounts:
+        - "70101100"   # VT E-SHOP UE
+        - "70104100"   # VTE E-SHOP EXPORT
+        - "70104110"   # VTE E-SHOP CEINTURES EXPORT
+        - "70115000"   # VTE E-SHOP
+        - "70115002"   # VENTES CEINTURES E-SHOP
+        - "70115003"   # VENTES PETITE MARO E-SHOP
+        - "70115004"   # VENTES MAROQUINERIE E-SHOP
+        - "70115100"   # VENTES E-SHOP UE
+        - "70115202"   # VTE E-SHOP CEINTURES UE
+        - "70115400"   # VENTES E-SHOP EXPORT
+        - "70115402"   # VTE E-SHOP CEINTURES EXPORT
+        - "70115403"   # VTE E-SHOP PETITE MARO EXPORT
+        - "70115404"   # VENTES MAROQUINERIE E-SHOP EXPORT
+        - "70704140"   # VTES MARCH. LOAFER ESHOP EXP
+        - "70704150"   # VTES MARCH. SNEAKER ESHOP EXP
+        - "70781350"   # VTE MARCHANDISES SNEAKER E-SHOP
+        - "70781354"   # VTE MARCHANDISES SNEAKER E-SHOP EXP
+        - "70785550"   # VTE MARCHANDISES LOAFER E-SHOP
+        - "70785551"   # VTE MARCHANDISES LOAFER E-SHOP UE
+        - "70785554"   # VTE MARCHANDISES LOAFER E-SHOP EXPO
+        - "70855000"   # PORT REFACT E-SHOP
+        - "70855400"   # PORT REFACT E-SHOP EXPORT

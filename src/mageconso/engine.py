@@ -131,7 +131,7 @@ class ConsolidationEngine:
         unclassified: dict[str, Decimal] = {}
 
         for line in wb.lines:
-            group = self._map_account(entity_code, line.local_account, wb)
+            group = self._map_account(entity_code, line.local_account, wb, line.local_label)
             if group is None:
                 unknown_accounts[line.local_account] = (
                     unknown_accounts.get(line.local_account, ZERO) + line.amount
@@ -145,7 +145,7 @@ class ConsolidationEngine:
                 # fausserait le resultat.
                 unclassified[group] = unclassified.get(group, ZERO) + line.amount
                 continue
-            cost_centre = self._cost_centre(entity_code, line.cost_centre)
+            cost_centre, cc_rule = self._allocate(entity_code, line, statement)
             rate_type = self.cfg.rate_type_for(statement, group)
             rate = self.cfg.rate(currency, closing_key, rate_type)
 
@@ -202,6 +202,7 @@ class ConsolidationEngine:
                     transformations=(
                         f"map({line.local_account} -> {group}); "
                         f"fx({currency}/{rate_type.value}@{rate})"
+                        + (f"; centre({cost_centre} : {cc_rule})" if cc_rule else "")
                     ),
                 )
             )
@@ -400,7 +401,8 @@ class ConsolidationEngine:
 
     # ---------------------------------------------------------------- mapping
     def _map_account(
-        self, entity: str, local_account: str, wb: SourceWorkbook
+        self, entity: str, local_account: str, wb: SourceWorkbook,
+        local_label: str | None = None,
     ) -> str | None:
         """Mapping compte local -> compte groupe.
 
@@ -408,15 +410,58 @@ class ConsolidationEngine:
         accounts'), (2) table de config de l'entite, (3) identite si le libelle
         est deja un compte du plan groupe.
         """
-        key = norm(local_account)
-        if key in wb.account_map:
-            return wb.account_map[key]
-        mapped = self.cfg.group_coa_for(entity, local_account)
-        if mapped:
-            return mapped
-        if key in self.cfg.group_coa:
-            return local_account
+        for candidate in dict.fromkeys(c for c in (local_account, local_label) if c):
+            key = norm(candidate)
+            if key in wb.account_map:
+                return wb.account_map[key]
+            mapped = self.cfg.group_coa_for(entity, candidate)
+            if mapped:
+                return mapped
+            if key in self.cfg.group_coa:
+                return self.cfg.group_coa_labels.get(key, candidate)
         return None
+
+    def _allocate(
+        self, entity: str, line, statement: Statement
+    ) -> tuple[str, str | None]:
+        """Centre de couts d'une ligne source, et regle appliquee (pour l'audit).
+
+        Priorite : section analytique de la source, puis regle d'affectation
+        par compte (cost_centers.yaml, allocation.rules), puis centre par defaut.
+        """
+        if line.cost_centre:
+            return self._cost_centre(entity, line.cost_centre), "section source"
+        for rule in self._rules:
+            if rule["entity"] and rule["entity"] != entity:
+                continue
+            if rule["statements"] and statement.value not in rule["statements"]:
+                continue
+            number = str(line.local_account or "").strip()
+            label = str(line.local_label or line.local_account or "")
+            if number in rule["accounts"] or (
+                rule["pattern"] is not None and rule["pattern"].search(label)
+            ):
+                return rule["cost_centre"], f"regle '{rule['name']}'"
+        return self._cost_centre(entity, None), None
+
+    @property
+    def _rules(self) -> list[dict]:
+        if not hasattr(self, "_rules_cache"):
+            import re
+
+            compiled = []
+            for r in (self.cfg.allocation.get("rules") or []):
+                pat = r.get("label_pattern")
+                compiled.append({
+                    "name": r.get("name") or r.get("cost_centre"),
+                    "entity": r.get("entity"),
+                    "cost_centre": r["cost_centre"],
+                    "statements": set(r.get("statements") or []),
+                    "accounts": {str(a).strip() for a in (r.get("accounts") or [])},
+                    "pattern": re.compile(pat, re.IGNORECASE) if pat else None,
+                })
+            self._rules_cache = compiled
+        return self._rules_cache
 
     def _cost_centre(self, entity: str, raw: str | None) -> str:
         """Resout le centre de couts d'une ligne.
