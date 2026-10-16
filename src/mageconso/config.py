@@ -212,6 +212,7 @@ def load_config(config_dir: str | Path | None = None) -> AppConfig:
             legal_name=e.get("legal_name"),
             mapping=e.get("mapping"),
             in_scope=bool(e.get("in_scope", True)),
+            source=e.get("source"),
         )
 
     cost_centres = {

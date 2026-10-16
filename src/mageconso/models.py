@@ -84,6 +84,7 @@ class Entity:
     legal_name: str | None = None
     mapping: str | None = None
     in_scope: bool = True
+    source: str | None = None  # "email" : collecte automatique (collect.py)
 
 
 @dataclass

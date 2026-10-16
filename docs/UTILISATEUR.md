@@ -268,9 +268,13 @@ Après chaque modification : `mageconso check`.
 
 ## 7. Clôture mensuelle — marche à suivre
 
-1. Rassembler les management accounts de la période.
+1. Rassembler les management accounts de la période. Ceux de Mage Asia Pacific
+   et de Mage Japon arrivent seuls dans le dossier de collecte (voir §8) :
+   `mageconso collect "CORTHAY/CLOTURE MENSUELLES/2026" --closing 2026-08-31`
+   indique quels fichiers seront retenus.
 2. `mageconso ui` et déposer les fichiers — toutes les balances doivent être
-   équilibrées et toutes les entités reconnues.
+   équilibrées et toutes les entités reconnues. En ligne de commande, le
+   dossier de collecte se donne directement à `consolidate`.
 3. Saisir les taux de la clôture (source banque-france.fr).
 4. Consolider. Bandeau vert ? Sinon, traiter l'onglet *Contrôles*, puis
    *Mapping à compléter* et *Diagnostics*.
@@ -278,3 +282,45 @@ Après chaque modification : `mageconso check`.
    cliquant sur les montants.
 6. Télécharger et archiver le classeur (et le journal `.db` si la ligne de
    commande a été utilisée avec `--journal`).
+
+## 8. Collecte automatique des management accounts
+
+Deux scénarios Make relèvent la boîte `office@corthay.com` toutes les 2 heures :
+
+| Dossier Outlook | Cabinets | Entité |
+|---|---|---|
+| Mage Asia Pacific / Accounting | ATAC, Forvis Mazars | MAGE_ASIA_PACIFIC |
+| Mage Japon | Forvis Mazars | MAGE_JAPON_KK |
+
+Chaque classeur Excel joint à un e-mail de ces cabinets est copié dans
+`CORTHAY/CLOTURE MENSUELLES/<année>/<mois de réception>/`, par exemple :
+
+    20260915-074434 - MAGE_JAPON_KK - Mage Japon report August 2026.xlsx
+
+**Votre seule action** : classer l'e-mail du cabinet dans son dossier Outlook.
+Un e-mail classé tardivement est quand même collecté au passage suivant.
+
+Pour voir ce que l'application retiendra :
+
+    mageconso collect "CORTHAY/CLOTURE MENSUELLES/2026" --closing 2026-08-31
+
+| Mention | Signification |
+|---|---|
+| `RETENU` | version la plus récente de l'entité pour la clôture : elle sera consolidée |
+| `REMPLACE` | version antérieure, conservée sur le disque, non consolidée |
+| `doublon` | copie identique d'un fichier déjà présent |
+| `ecarte` | autre clôture, ou classeur qui n'est pas un management accounts (relevé bancaire, paie…) |
+
+Puis :
+
+    mageconso consolidate "CORTHAY/CLOTURE MENSUELLES/2026" --closing 2026-08-31 --rates taux.xlsx
+
+Sans `--closing`, chaque entité est prise à sa clôture la plus récente. Si ces
+clôtures diffèrent, l'avertissement `COLLECT-CLOSINGS` le signale.
+
+La période est toujours lue dans la feuille *Cover*. Le mois du sous-dossier est
+celui de la réception de l'e-mail : le rapport d'août, reçu le 15 septembre, se
+trouve dans `2026/09`. C'est pourquoi on désigne le dossier de l'année, et non celui du mois.
+
+Une version corrigée envoyée par un cabinet remplace automatiquement la
+précédente. L'avertissement `COLLECT-REPLACED` en garde la trace dans l'onglet *Diagnostics*.

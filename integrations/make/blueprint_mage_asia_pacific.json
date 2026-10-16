@@ -1,0 +1,231 @@
+{
+  "name": "Consolidation - Collecte MA Mage Asia Pacific",
+  "flow": [
+    {
+      "id": 1,
+      "module": "microsoft-email:watchMessages",
+      "version": 2,
+      "parameters": {
+        "__IMTCONN__": 14526401,
+        "select": "all",
+        "triggerBy": "lastModifiedDateTime",
+        "folder": "/AAMkADY4NDdiNTIyLWY5NDItNDhhOC1hMjNkLTY4Nzg4NDlhM2U0NgAuAAAAAAAxN-vNrO7FQaeNHo2s6nwmAQAMOa6Kl148TKhfgC3hjYvAAAVl0QumAAA=/AAMkADY4NDdiNTIyLWY5NDItNDhhOC1hMjNkLTY4Nzg4NDlhM2U0NgAuAAAAAAAxN-vNrO7FQaeNHo2s6nwmAQAMOa6Kl148TKhfgC3hjYvAAAWxY7nJAAA=",
+        "limit": 20
+      },
+      "mapper": {},
+      "metadata": {
+        "designer": {
+          "x": 0,
+          "y": 0,
+          "name": "Outlook - Mage Asia Pacific / Accounting"
+        },
+        "restore": {
+          "parameters": {
+            "__IMTCONN__": {
+              "data": {
+                "scoped": "true",
+                "connection": "azure"
+              },
+              "label": "Julien's Microsoft connection (Julien <office@corthay.com>)"
+            },
+            "folder": {
+              "path": [
+                "Mage Asia Pacific",
+                "Accounting"
+              ]
+            },
+            "select": {
+              "label": "All"
+            },
+            "triggerBy": {
+              "label": "Last Modified Date"
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": 2,
+      "module": "datastore:ExistRecord",
+      "version": 1,
+      "filter": {
+        "name": "Cabinet expediteur + piece jointe",
+        "conditions": [
+          [
+            {
+              "a": "{{1.from.emailAddress.address}}",
+              "o": "text:contain:ci",
+              "b": "atac.com.hk"
+            },
+            {
+              "a": "{{1.hasAttachments}}",
+              "o": "boolean:equal",
+              "b": "true"
+            }
+          ],
+          [
+            {
+              "a": "{{1.from.emailAddress.address}}",
+              "o": "text:contain:ci",
+              "b": "forvismazars.com"
+            },
+            {
+              "a": "{{1.hasAttachments}}",
+              "o": "boolean:equal",
+              "b": "true"
+            }
+          ]
+        ]
+      },
+      "parameters": {
+        "datastore": 197179
+      },
+      "mapper": {
+        "key": "{{1.id}}"
+      },
+      "metadata": {
+        "designer": {
+          "x": 300,
+          "y": 0,
+          "name": "Deja traite ?"
+        }
+      }
+    },
+    {
+      "id": 3,
+      "module": "microsoft-email:listAttachments",
+      "version": 2,
+      "filter": {
+        "name": "Jamais traite",
+        "conditions": [
+          [
+            {
+              "a": "{{2.exist}}",
+              "o": "boolean:equal",
+              "b": "false"
+            }
+          ]
+        ]
+      },
+      "parameters": {
+        "__IMTCONN__": 14526401
+      },
+      "mapper": {
+        "message": "{{1.id}}",
+        "limit": 20
+      },
+      "metadata": {
+        "designer": {
+          "x": 600,
+          "y": 0,
+          "name": "Pieces jointes"
+        },
+        "restore": {
+          "parameters": {
+            "__IMTCONN__": {
+              "data": {
+                "scoped": "true",
+                "connection": "azure"
+              },
+              "label": "Julien's Microsoft connection (Julien <office@corthay.com>)"
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": 4,
+      "module": "onedrive:uploadAFile",
+      "version": 2,
+      "filter": {
+        "name": "Classeur Excel",
+        "conditions": [
+          [
+            {
+              "a": "{{3.name}}",
+              "o": "text:pattern:ci",
+              "b": "\\.xls[xm]$"
+            },
+            {
+              "a": "{{3.isInline}}",
+              "o": "boolean:notequal",
+              "b": "true"
+            }
+          ]
+        ]
+      },
+      "parameters": {
+        "__IMTCONN__": 14526401
+      },
+      "mapper": {
+        "enter": "path",
+        "select": "my",
+        "select1": "no",
+        "folder": "/CORTHAY/CLOTURE MENSUELLES/{{formatDate(1.receivedDateTime; \"YYYY\")}}/{{formatDate(1.receivedDateTime; \"MM\")}}",
+        "filename": "{{formatDate(1.receivedDateTime; \"YYYYMMDD-HHmmss\")}} - MAGE_ASIA_PACIFIC - {{3.name}}",
+        "data": "{{3.data}}",
+        "conflictBehavior": "rename"
+      },
+      "metadata": {
+        "designer": {
+          "x": 900,
+          "y": 0,
+          "name": "Depot dossier de collecte"
+        },
+        "restore": {
+          "parameters": {
+            "__IMTCONN__": {
+              "data": {
+                "scoped": "true",
+                "connection": "azure"
+              },
+              "label": "Julien's Microsoft connection (Julien <office@corthay.com>)"
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": 5,
+      "module": "datastore:AddRecord",
+      "version": 1,
+      "parameters": {
+        "datastore": 197179
+      },
+      "mapper": {
+        "key": "{{1.id}}",
+        "overwrite": true,
+        "data": {
+          "entity": "MAGE_ASIA_PACIFIC",
+          "sender": "{{1.from.emailAddress.address}}",
+          "subject": "{{1.subject}}",
+          "received": "{{1.receivedDateTime}}",
+          "files": "{{4.name}}",
+          "folder": "{{4.parentReference.path}}",
+          "processed": "{{now}}"
+        }
+      },
+      "metadata": {
+        "designer": {
+          "x": 1200,
+          "y": 0,
+          "name": "Journal de collecte"
+        }
+      }
+    }
+  ],
+  "metadata": {
+    "version": 1,
+    "instant": false,
+    "scenario": {
+      "roundtrips": 1,
+      "maxErrors": 3,
+      "autoCommit": true,
+      "autoCommitTriggerLast": true,
+      "sequential": true,
+      "confidential": false,
+      "dataloss": false,
+      "dlq": false
+    }
+  }
+}

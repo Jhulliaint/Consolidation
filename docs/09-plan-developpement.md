@@ -12,13 +12,14 @@
 | **L5** | Présentation paramétrable, séparée du calcul | **Fait** |
 | **L6** | Export Excel : états, contrôles, diagnostics, piste d'audit | **Fait** |
 | **L7** | Journal d'audit SQLite interrogeable + commande `trace` | **Fait** |
-| **L8** | Tests automatisés | **Fait** — 97 tests |
+| **L8** | Tests automatisés | **Fait** — 105 tests |
 | **L9** | Documentation installation et utilisateur | **Fait** |
 | **L10** | Revue : 5 défauts de calcul corrigés (voir `CHANGELOG.md`) | **Fait** |
 | **L11** | Interface graphique locale, traçabilité au clic | **Fait** |
 | **L12** | Outil de rapprochement à un classeur de référence | **Fait** |
 | **L13** | Taux : fichier, pré-contrôle, détection d'erreurs ; suggestions de mapping | **Fait** |
 | **L14** | Vues par entité, % du CA, marge par famille ; `mageconso check` ; contrôle C10 | **Fait** |
+| **L15** | Chantier C-A : collecte automatique des management accounts (Make + `mageconso collect`) | **Fait** — en service le 16/10/2026 |
 
 ## 9.2 Décisions du 14/10/2026
 
@@ -28,9 +29,9 @@
 | DEC-2 | **Les management accounts des filiales arrivent par e-mail**, envoyés par les cabinets de paie. Leur récupération doit être automatique. | Nouveau chantier C-A ci-dessous. |
 | DEC-3 | **MAGE SAS et SICCA ne reçoivent pas de management accounts.** Leurs données équivalentes seront construites par une fonctionnalité de l'application. | Nouveau chantier C-B ci-dessous. |
 
-Les deux chantiers sont **réservés pour plus tard**. Rien n'est développé à ce stade.
+Le chantier C-A est **terminé et en service** (16/10/2026). Le chantier C-B reste réservé.
 
-### Chantier C-A — Récupération automatique des management accounts *(réservé)*
+### Chantier C-A — Récupération automatique des management accounts *(fait)*
 
 Tâche planifiée qui relève la boîte de réception, repère les e-mails des cabinets
 de paie, extrait les pièces jointes Excel, identifie l'entité et la période, puis
@@ -70,6 +71,49 @@ Répartition des rôles retenue :
 | Identifier l'entité et la période, retenir la version la plus récente et signaler un remplacement | application (lecture du dossier de collecte) |
 
 Le dépôt de fichiers par Make horodate chaque version au lieu d'écraser la précédente. C'est ce qui rend applicable la règle « toutes les versions conservées ».
+
+#### Réalisation (16/10/2026)
+
+**Côté Make** (organisation 937102, équipe 119554) — notice : `integrations/make/README.md`.
+
+| Objet | Identifiant | Rôle |
+|---|---|---|
+| Scénario « Consolidation - Collecte MA Mage Japon » | 9984770 | dossier Outlook « Mage Japon », expéditeurs `forvismazars.com` |
+| Scénario « Consolidation - Collecte MA Mage Asia Pacific » | 9986367 | dossier « Mage Asia Pacific/Accounting », expéditeurs `atac.com.hk` et `forvismazars.com` |
+| Data store « Collecte management accounts » | 197179 | un enregistrement par e-mail traité (clé : identifiant du message) |
+
+Les deux scénarios sont **actifs**, et relèvent leur dossier **toutes les 2 heures**.
+Le déclencheur porte sur la **date de dernière modification** : un e-mail classé
+à la main dans le dossier plusieurs jours après sa réception est donc pris en
+compte au passage suivant. Chaque pièce jointe `.xlsx`/`.xlsm` est déposée dans
+`CORTHAY/CLOTURE MENSUELLES/<année>/<mois de réception>/` sous le nom
+`AAAAMMJJ-hhmmss - <ENTITE> - <nom d'origine>`. Le dossier du mois est créé au premier dépôt.
+
+**Côté application** — `src/mageconso/collect.py`, commande `mageconso collect` :
+
+- lit tout le dossier de collecte, sous-dossiers compris ;
+- relit l'entité et la clôture dans la feuille *Cover*. Le mois du sous-dossier
+  est celui de la **réception**, pas celui de la période ;
+- écarte les classeurs qui ne sont pas des management accounts, avec le motif.
+  Les cabinets envoient aussi des relevés bancaires, des états de paie, des notes de frais… ;
+- par entité et par clôture, retient la version la plus récente. Les autres
+  sont marquées **remplacées** et signalées (`COLLECT-REPLACED`) ;
+- un fichier reçu deux fois à l'identique (même empreinte SHA-256) est marqué
+  **doublon**, pas version corrigée ;
+- signale une entité `source: email` sans fichier (`COLLECT-MISSING`), ainsi que des
+  clôtures différentes d'une entité à l'autre (`COLLECT-CLOSINGS`) ;
+- `consolidate`, `inspect` et `rates` acceptent un dossier de collecte à la place des
+  fichiers. Les diagnostics de collecte figurent alors dans l'onglet *Diagnostics*.
+
+Constats de la mise en service :
+
+- au premier passage, les scénarios ont repris l'historique des dossiers par lots
+  de 20 e-mails. Le dossier « Mage Japon » en contient environ 430, d'où un
+  rattrapage d'environ 2 jours au rythme de 2 heures ;
+- les rapports Forvis Mazars de **juin, juillet et août 2026** sont encore dans la
+  **boîte de réception**, non classés. Ils seront collectés dès leur classement dans « Mage Japon » ;
+- ATAC n'a pas encore transmis les management accounts de juin à août 2026 (échanges
+  de questions en cours). Le dernier reçu est celui d'avril 2026.
 
 ### Chantier C-B — Données de MAGE SAS et SICCA *(réservé)*
 

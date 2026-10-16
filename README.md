@@ -101,6 +101,7 @@ mageconso trace --journal out/audit.db --run 1 --account "Account Receivable"
 
 | | |
 |---|---|
+| **Collecte automatique** | deux scénarios Make copient les management accounts envoyés par les cabinets ; `mageconso collect` retient la dernière version de chaque entité et signale les remplacements ([notice](integrations/make/README.md)) |
 | **Interface graphique locale** | dépôt des fichiers, taux, présentation, résultats et traçabilité au clic |
 | **États** | bilan et compte de résultat (synthèse, détail), par entité avec éliminations, par centre de coûts, marge par famille, % du chiffre d'affaires |
 | **Rapprochement** | comparaison ligne à ligne avec un classeur consolidé de référence (`--reference`) |
@@ -141,6 +142,7 @@ au plus près de sa définition, avec un renvoi vers la question correspondante.
 | 10. Rapport de rapprochement | [`docs/10-rapport-rapprochement.md`](docs/10-rapport-rapprochement.md) |
 | 13. Installation | [`docs/INSTALLATION.md`](docs/INSTALLATION.md) |
 | 14. Mode d'emploi | [`docs/UTILISATEUR.md`](docs/UTILISATEUR.md) |
+| Collecte Make | [`integrations/make/README.md`](integrations/make/README.md) |
 
 Les règles de mapping (livrable 9) sont dans `config/mapping/` et
 `config/coa/` ; le prototype (11) dans `src/` ; les tests (12) dans `tests/`.
@@ -164,7 +166,7 @@ Les règles de mapping (livrable 9) sont dans `config/mapping/` et
 pip install -e ".[dev]" && python -m pytest -q
 ```
 
-97 tests : lecture des sources, règles de change, éliminations, équilibre du
+105 tests : lecture des sources, dossier de collecte (dernière version, doublons, fichiers étrangers), règles de change, éliminations, équilibre du
 bilan, cohérence résultat/bilan, réconciliation du journal d'audit,
 non-altération des montants par la présentation, scénarios d'incidents de
 clôture (écart de réciprocité, compte non mappé, fichier en double, taux

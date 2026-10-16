@@ -7,6 +7,9 @@
     mageconso consolidate ... --reference "EC+/2025.xlsx"   rapprochement
     mageconso check --closing 2025-12-31              verifier le parametrage
     mageconso trace --journal out/audit.db --run 1 --account "Cash Bank"
+    mageconso collect "CLOTURE MENSUELLES/2026" --closing 2026-08-31
+    mageconso consolidate "CLOTURE MENSUELLES/2026" --closing 2026-08-31 ...
+                     (un DOSSIER de collecte : derniere version de chaque entite)
 """
 from __future__ import annotations
 
@@ -19,6 +22,7 @@ from pathlib import Path
 
 from .audit import AuditJournal
 from .checks import check_config
+from .collect import Collection, collect
 from .config import load_config
 from .models import Severity, eur
 from .pipeline import (
@@ -88,10 +92,62 @@ def _entity_overrides(values: list[str] | None, paths: list[Path]) -> dict[str, 
     return out
 
 
+def _sources(cfg, args: argparse.Namespace) -> tuple[list[Path], list]:
+    """Fichiers a traiter et diagnostics de collecte.
+
+    Un argument qui designe un DOSSIER est lu comme un dossier de collecte
+    (scenarios Make) : seule la derniere version recue de chaque entite est
+    retenue, les versions remplacees sont signalees.
+    """
+    paths: list[Path] = []
+    diags: list = []
+    for pat in args.files:
+        if Path(pat).is_dir():
+            col = collect(cfg, pat, closing=args.closing)
+            _print_collection(col, verbose=False)
+            paths.extend(col.paths)
+            diags.extend(col.diagnostics)
+        else:
+            paths.extend(_expand([pat]))
+    return paths, diags
+
+
+def _print_collection(col: Collection, verbose: bool = True) -> None:
+    print(f"Dossier de collecte : {col.root}")
+    labels = {"retained": ok("RETENU  "), "replaced": warn("REMPLACE"),
+              "duplicate": dim("doublon "), "ignored": dim("ecarte  ")}
+    for f in sorted(col.files, key=lambda f: (f.entity or "~", f.closing or "", f.sort_key)):
+        if f.status in ("ignored", "duplicate") and not verbose:
+            continue
+        where = f"{f.entity or '?'} {f.closing or ''}".strip()
+        print(f"  {labels.get(f.status, f.status)}  {where:<32} "
+              f"{f.path.relative_to(col.root)}")
+        if f.status != "retained" and f.reason:
+            print(dim(f"            {f.reason}"))
+    for d in col.diagnostics:
+        tag = ko if d.severity is Severity.ERROR else warn
+        print(tag(f"  [{d.severity.value}] {d.code}") + f": {d.message}")
+
+
+# --------------------------------------------------------------------- collect
+def cmd_collect(args: argparse.Namespace) -> int:
+    cfg = load_config(args.config)
+    col = collect(cfg, args.folder, closing=args.closing)
+    _print_collection(col)
+    if not col.retained:
+        print(ko("Aucun management accounts exploitable."))
+        return 2
+    print(f"\n{len(col.retained)} fichier(s) retenu(s), {len(col.replaced)} version(s) "
+          f"remplacee(s), {len(col.duplicates)} doublon(s), {len(col.ignored)} ecarte(s).")
+    print(f'Consolider : mageconso consolidate "{col.root}"'
+          + (f" --closing {args.closing}" if args.closing else "") + " --rates taux.xlsx")
+    return 0
+
+
 # --------------------------------------------------------------------- inspect
 def cmd_inspect(args: argparse.Namespace) -> int:
     cfg = load_config(args.config)
-    paths = _expand(args.files)
+    paths, _ = _sources(cfg, args)
     wbs = read_sources(cfg, paths, _entity_overrides(args.entity, paths))
     for wb in wbs:
         total = sum((ln.amount for ln in wb.lines), Decimal(0))
@@ -124,7 +180,7 @@ def cmd_inspect(args: argparse.Namespace) -> int:
 # ----------------------------------------------------------------------- rates
 def cmd_rates(args: argparse.Namespace) -> int:
     cfg = load_config(args.config)
-    paths = _expand(args.files)
+    paths, _ = _sources(cfg, args)
     wbs = read_sources(cfg, paths, _entity_overrides(args.entity, paths))
     closing = args.closing or default_closing(wbs)
     needs = rate_needs(cfg, wbs, closing)
@@ -142,7 +198,7 @@ def cmd_rates(args: argparse.Namespace) -> int:
 # ----------------------------------------------------------------- consolidate
 def cmd_consolidate(args: argparse.Namespace) -> int:
     cfg = load_config(args.config)
-    paths = _expand(args.files)
+    paths, collect_diags = _sources(cfg, args)
     if not paths:
         print(ko("Aucun fichier source a traiter."), file=sys.stderr)
         return 2
@@ -182,6 +238,7 @@ def cmd_consolidate(args: argparse.Namespace) -> int:
         return 2
 
     out = run(cfg, paths, opts, workbooks=wbs)
+    out.result.diagnostics[:0] = collect_diags  # tracees dans l'onglet Diagnostics
     target = export(out, args.output)
 
     print("\n--- Synthese ---")
@@ -307,11 +364,18 @@ def build_parser() -> argparse.ArgumentParser:
     ui.set_defaults(func=cmd_ui)
 
     def add_sources(sp):
-        sp.add_argument("files", nargs="+", help="fichiers de management accounts")
+        sp.add_argument("files", nargs="+",
+                        help="fichiers de management accounts, ou dossier de collecte")
         sp.add_argument("--entity", action="append", metavar="[FICHIER=]CODE",
                         help="force l'entite d'un fichier non reconnu (repetable)")
         sp.add_argument("--closing", default=None,
                         help="date de cloture ISO (defaut : lue dans les fichiers)")
+
+    col = sub.add_parser("collect", help="inventorier le dossier de collecte (Make)")
+    col.add_argument("folder", help="ex. CORTHAY/CLOTURE MENSUELLES/2026")
+    col.add_argument("--closing", default=None,
+                     help="cloture ISO (defaut : la plus recente de chaque entite)")
+    col.set_defaults(func=cmd_collect)
 
     ins = sub.add_parser("inspect", help="examiner des fichiers sources sans consolider")
     add_sources(ins)

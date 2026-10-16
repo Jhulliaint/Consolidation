@@ -1,5 +1,24 @@
 # Journal des modifications
 
+## 0.3.0 — Collecte automatique des management accounts (chantier C-A)
+
+- **Scénarios Make** (actifs, relève toutes les 2 heures) : « Consolidation -
+  Collecte MA Mage Japon » (9984770) et « … Mage Asia Pacific » (9986367). Ils
+  copient les pièces jointes Excel des cabinets (ATAC, Forvis Mazars) dans
+  `CORTHAY/CLOTURE MENSUELLES/<année>/<mois>/`, en horodatant le nom du fichier.
+  Le data store 197179 empêche qu'un e-mail soit traité deux fois et tient le journal de collecte.
+  Blueprints reproductibles : `integrations/make/build_blueprints.py`.
+- **`mageconso collect <dossier>`** : inventaire du dossier de collecte, avec
+  entité et clôture lues dans la feuille *Cover*. Pour chaque entité et chaque
+  clôture, la version la plus récente est retenue. Les versions antérieures
+  sont signalées (`COLLECT-REPLACED`), les copies identiques marquées doublons,
+  et les classeurs étrangers (paie, relevés bancaires) écartés avec leur motif.
+- `consolidate`, `inspect` et `rates` acceptent un **dossier de collecte** à la
+  place d'une liste de fichiers. Les diagnostics de collecte sont reportés dans
+  l'onglet *Diagnostics* du classeur.
+- `config/entities.yaml` : nouvelle clé `source: email`. Une entité qui
+  l'utilise et n'a pas de fichier pour la clôture est signalée (`COLLECT-MISSING`).
+
 ## 0.2.0 — Revue de l'application : fiabilité, ergonomie, fonctionnalités
 
 ### Défauts corrigés
